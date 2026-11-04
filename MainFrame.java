@@ -5,6 +5,7 @@ public class MainFrame extends JFrame {
 
     private static final String MENU_CARD = "menu";
     private static final String ABOUT_CARD = "about";
+    private static final String ROUND_ROBIN_CARD = "roundRobin";
 
     private JButton roundRobinButton;
     private JButton aboutButton;
@@ -18,7 +19,7 @@ public class MainFrame extends JFrame {
 
     private void initializeFrame() {
         setTitle("Round Robin");
-        setSize(700, 700);
+        setSize(1450, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -66,27 +67,26 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Show the About screen when About is clicked
         aboutButton.addActionListener(e -> cardLayout.show(cardPanel, ABOUT_CARD));
+        roundRobinButton.addActionListener(e -> cardLayout.show(cardPanel, ROUND_ROBIN_CARD));
 
-        // Place the buttons one below the other
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
 
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 20, 0); // 20px space below Round Robin
+        gbc.insets = new Insets(0, 0, 20, 0); 
         centerPanel.add(roundRobinButton, gbc);
 
         gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 0, 0);
         centerPanel.add(aboutButton, gbc);
 
-        // Screens: main interface and About
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.add(centerPanel, MENU_CARD);
         cardPanel.add(new AboutPanel(() -> cardLayout.show(cardPanel, MENU_CARD)), ABOUT_CARD);
+        cardPanel.add(new RoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD)), ROUND_ROBIN_CARD);
 
         add(cardPanel, BorderLayout.CENTER);
     }
