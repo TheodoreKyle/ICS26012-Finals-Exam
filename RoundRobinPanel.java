@@ -386,12 +386,10 @@ public class RoundRobinPanel extends JPanel {
                 currentTime += executeTime;
                 current.remBt -= executeTime;
 
-                // Priority Rule: Enqueue new arrivals first
                 while (index < n && processes.get(index).at <= currentTime) {
                     queue.add(processes.get(index++));
                 }
 
-                // Then enqueue preempted process
                 if (current.remBt > 0) {
                     queue.add(current);
                 } else {
