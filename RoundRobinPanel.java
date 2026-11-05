@@ -8,6 +8,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.text.DocumentFilter;
 
 public class RoundRobinPanel extends JPanel {
 
@@ -17,6 +18,7 @@ public class RoundRobinPanel extends JPanel {
     private JLabel quantumErrorLabel;
     private JLabel tableErrorLabel; 
     private JTable resultTable;
+    private JButton calculateButton; 
     private DefaultTableModel tableModel;
 
     public RoundRobinPanel(Runnable onBack) {
@@ -151,7 +153,12 @@ public class RoundRobinPanel extends JPanel {
 
     private void updateTableRows() {
         String text = processesField.getText();
-        int targetRows = text.matches("1[0-9]|20") ? Integer.parseInt(text) : 0;
+
+        if (!text.matches("1[0-9]|20")) {
+            return;
+        }
+
+        int targetRows = Integer.parseInt(text);
 
         while (tableModel.getRowCount() < targetRows) {
             Object[] newRow = new Object[tableModel.getColumnCount()];
@@ -216,71 +223,90 @@ public class RoundRobinPanel extends JPanel {
         cellRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         resultTable.setDefaultRenderer(Object.class, cellRenderer);
 
-        DefaultTableCellRenderer idRenderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
-                    boolean isSelected, boolean hasFocus, int row, int column) {
-                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
-                return this;
-            }
-        };
+        resultTable.getColumnModel().getColumn(0).setCellEditor(createCellEditor(new ProcessIdFilter(
+        3,
+                () -> showTableError("Please input only from 0 to 999"),
+                () -> showTableError(""))));
 
-        idRenderer.setHorizontalAlignment(SwingConstants.LEFT);
-        resultTable.getColumnModel().getColumn(0).setCellRenderer(idRenderer);
+        resultTable.getColumnModel().getColumn(1).setCellEditor(createCellEditor(new LimitedIntegerFilter(
+                4,
+                () -> showTableError("Please input only from 0 to 9999"),
+                () -> showTableError(""))));
 
-        JTextField idField = new JTextField();
-        idField.setFont(new Font("Arial", Font.PLAIN, 14));
-        idField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.BLACK),
-                BorderFactory.createEmptyBorder(0, 7, 0, 0)));
-        ((AbstractDocument) idField.getDocument()).setDocumentFilter(new ProcessIdFilter());
-
-        DefaultCellEditor idEditor = new DefaultCellEditor(idField);
-        idEditor.setClickCountToStart(1);
-        resultTable.getColumnModel().getColumn(0).setCellEditor(idEditor);
-
-        resultTable.getColumnModel().getColumn(1).setCellEditor(createNumberEditor());
-        resultTable.getColumnModel().getColumn(2).setCellEditor(createNumberEditor());
+        resultTable.getColumnModel().getColumn(2).setCellEditor(createCellEditor(new LimitedIntegerFilter(
+                4,
+                () -> showTableError("Please input only from 0 to 9999"),
+                () -> showTableError(""))));
 
         resultTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
 
         tableErrorLabel = createErrorLabel();
         tableErrorLabel.setPreferredSize(new Dimension(0, 28));
 
+        calculateButton = createCalculateButton();
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
+        buttonPanel.add(calculateButton);
+
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         tablePanel.add(tableErrorLabel, BorderLayout.NORTH);
         tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
+        tablePanel.add(buttonPanel, BorderLayout.SOUTH); 
         return tablePanel;
     }
 
-    private DefaultCellEditor createNumberEditor() {
-        JTextField numberField = new JTextField();
-        numberField.setFont(new Font("Arial", Font.PLAIN, 14));
-        numberField.setHorizontalAlignment(SwingConstants.CENTER);
-        numberField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+    private JButton createCalculateButton() {
+        JButton button = new JButton("Calculate");
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(220, 60));
+        button.setFont(new Font("Arial", Font.BOLD, 24));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(0, 100, 0));
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
 
-        ((AbstractDocument) numberField.getDocument()).setDocumentFilter(new LimitedIntegerFilter(
-                4,
-                () -> tableErrorLabel.setText("Please input only from 0 to 9999"),
-                () -> tableErrorLabel.setText("")));
+        Color calculateNormalColor = new Color(0, 100, 0);
+        Color calculatePressedColor = new Color(0, 70, 0);
 
-        DefaultCellEditor numberEditor = new DefaultCellEditor(numberField);
-        numberEditor.setClickCountToStart(1);
+        button.getModel().addChangeListener(e -> {
+            if (button.getModel().isPressed()) {
+                button.setBackground(calculatePressedColor);
+            } else {
+                button.setBackground(calculateNormalColor);
+            }
+        });
 
-        numberEditor.addCellEditorListener(new CellEditorListener() {
+        return button;
+    }
+
+    private DefaultCellEditor createCellEditor(DocumentFilter filter) {
+        JTextField cellField = new JTextField();
+        cellField.setFont(new Font("Arial", Font.PLAIN, 14));
+        cellField.setHorizontalAlignment(SwingConstants.CENTER);
+        cellField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+        ((AbstractDocument) cellField.getDocument()).setDocumentFilter(filter);
+
+        DefaultCellEditor cellEditor = new DefaultCellEditor(cellField);
+        cellEditor.setClickCountToStart(1);
+
+        cellEditor.addCellEditorListener(new CellEditorListener() {
             @Override
             public void editingStopped(ChangeEvent e) {
-                tableErrorLabel.setText("");
+                showTableError("");
             }
 
             @Override
             public void editingCanceled(ChangeEvent e) {
-                tableErrorLabel.setText("");
+                showTableError("");
             }
         });
 
-        return numberEditor;
+        return cellEditor;
+    }
+
+    private void showTableError(String message) {
+        tableErrorLabel.setText(message);
     }
 }
