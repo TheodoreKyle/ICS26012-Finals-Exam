@@ -25,7 +25,6 @@ public class RoundRobinPanel extends JPanel {
     private JLabel quantumErrorLabel;
     private JLabel tableErrorLabel; 
     
-    // Replaced idleTimeLabel with CPU and Throughput labels
     private JLabel cpuUtilLabel;
     private JLabel throughputLabel;
     
@@ -37,12 +36,22 @@ public class RoundRobinPanel extends JPanel {
     public RoundRobinPanel(Runnable onBack) {
         setLayout(new BorderLayout());
 
+        JPanel contentPanel = new JPanel(new BorderLayout());
+
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.add(createTopPanel(onBack), BorderLayout.NORTH);
         northPanel.add(createInputPanel(), BorderLayout.CENTER);
 
-        add(northPanel, BorderLayout.NORTH);
-        add(createTablePanel(), BorderLayout.CENTER); 
+        contentPanel.add(northPanel, BorderLayout.NORTH);
+        contentPanel.add(createTablePanel(), BorderLayout.CENTER); 
+
+        JScrollPane mainScrollPane = new JScrollPane(contentPanel);
+        mainScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        mainScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        mainScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        mainScrollPane.getVerticalScrollBar().setUnitIncrement(16); 
+
+        add(mainScrollPane, BorderLayout.CENTER);
     }
 
     private JPanel createTopPanel(Runnable onBack) {
@@ -251,7 +260,6 @@ public class RoundRobinPanel extends JPanel {
         calculateButton = createCalculateButton();
         calculateButton.addActionListener(e -> calculate());
 
-        // Setup CPU Utilization and Throughput Labels
         cpuUtilLabel = new JLabel("");
         cpuUtilLabel.setFont(new Font("Arial", Font.BOLD, 16));
         cpuUtilLabel.setForeground(new Color(0, 100, 0));
@@ -260,9 +268,8 @@ public class RoundRobinPanel extends JPanel {
         throughputLabel.setFont(new Font("Arial", Font.BOLD, 16));
         throughputLabel.setForeground(new Color(0, 100, 0));
 
-        // Group labels to stack vertically beside the Calculate button
         JPanel statsPanel = new JPanel(new GridLayout(2, 1, 0, 5));
-        statsPanel.setOpaque(false); // Make it blend with background
+        statsPanel.setOpaque(false); 
         statsPanel.add(cpuUtilLabel);
         statsPanel.add(throughputLabel);
 
@@ -286,9 +293,14 @@ public class RoundRobinPanel extends JPanel {
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         tablePanel.add(tableErrorLabel, BorderLayout.NORTH);
-        tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
+
+        JPanel tableWrapper = new JPanel(new BorderLayout());
+        tableWrapper.add(resultTable.getTableHeader(), BorderLayout.NORTH);
+        tableWrapper.add(resultTable, BorderLayout.CENTER);
         
+        tablePanel.add(tableWrapper, BorderLayout.CENTER);
         tablePanel.add(southPanel, BorderLayout.SOUTH); 
+        
         return tablePanel;
     }
 
@@ -407,7 +419,6 @@ public class RoundRobinPanel extends JPanel {
             tableModel.setValueAt(p.rt, p.rowIndex, 6);
         }
 
-        // Output CPU Utilization and Throughput directly to the UI labels
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
         throughputLabel.setText(String.format("Throughput: %.4f", throughput));
         
@@ -504,139 +515,5 @@ public class RoundRobinPanel extends JPanel {
 
     private void showTableError(String message) {
         tableErrorLabel.setText(message);
-    }
-
-    // STARTING HERE IS THE GANTT CHART, TO BE DELETED IF A FAILURE
-
-    private static class ProcessData {
-        String id;
-        int at, bt, remBt, ct, tat, wt, rt, rowIndex;
-        boolean firstTime = true;
-
-        ProcessData(String id, int at, int bt, int rowIndex) {
-            this.id = (!id.startsWith("P")) ? "P" + id : id;
-            this.at = at;
-            this.bt = bt;
-            this.remBt = bt;
-            this.rowIndex = rowIndex;
-        }
-    }
-
-    private static class GanttSegment {
-        String processId;
-        int startTime;
-        int endTime;
-
-        GanttSegment(String processId, int startTime, int endTime) {
-            this.processId = processId;
-            this.startTime = startTime;
-            this.endTime = endTime;
-        }
-    }
-
-    private static class GanttChartPanel extends JPanel {
-        private List<GanttSegment> segments = new ArrayList<>();
-
-        public void setSegments(List<GanttSegment> segments) {
-            this.segments = segments;
-            
-            if (segments == null || segments.isEmpty()) return;
-
-            int minTime = segments.get(0).startTime;
-            int maxTime = segments.get(segments.size() - 1).endTime;
-            int totalDuration = maxTime - minTime;
-            
-            if (totalDuration == 0) return;
-
-            int minSegmentDuration = Integer.MAX_VALUE;
-            for (GanttSegment seg : segments) {
-                int duration = seg.endTime - seg.startTime;
-                if (duration > 0 && duration < minSegmentDuration) {
-                    minSegmentDuration = duration;
-                }
-            }
-            
-            if (minSegmentDuration == Integer.MAX_VALUE) {
-                minSegmentDuration = 1;
-            }
-
-            int calculatedWidth = (totalDuration * 45) / minSegmentDuration;
-            
-            int finalWidth = Math.max(800, Math.min(calculatedWidth, 30000));
-            
-            setPreferredSize(new Dimension(finalWidth, 100));
-            
-            revalidate(); 
-            repaint();
-        }
-
-        public void clear() {
-            this.segments.clear();
-            setPreferredSize(new Dimension(800, 100)); 
-            revalidate();
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (segments == null || segments.isEmpty()) return;
-
-            Graphics2D g2 = (Graphics2D) g;
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            int paddingX = 30;
-            int startY = 15;
-            int barHeight = 45;
-            int totalWidth = getWidth() - 2 * paddingX;
-
-            int minTime = segments.get(0).startTime;
-            int maxTime = segments.get(segments.size() - 1).endTime;
-            int totalDuration = maxTime - minTime;
-
-            if (totalDuration == 0) return;
-
-            FontMetrics fm = g2.getFontMetrics();
-
-            for (int i = 0; i < segments.size(); i++) {
-                GanttSegment seg = segments.get(i);
-                
-                if (seg.startTime == seg.endTime) {
-                    continue;
-                }
-                
-                int x = paddingX + (int) ((double) (seg.startTime - minTime) / totalDuration * totalWidth);
-                int nextX = paddingX + (int) ((double) (seg.endTime - minTime) / totalDuration * totalWidth);
-                int width = nextX - x;
-
-                if (seg.processId.equals("Idle")) {
-                    g2.setColor(Color.WHITE);
-                } else {
-                    g2.setColor(new Color(235, 235, 235)); 
-                }
-                
-                g2.fillRect(x, startY, width, barHeight);
-                g2.setColor(Color.BLACK);
-                g2.drawRect(x, startY, width, barHeight);
-
-                if (!seg.processId.equals("Idle")) {
-                    g2.setFont(new Font("Arial", Font.PLAIN, 16));
-                    g2.setColor(Color.BLACK);
-                    int textWidth = fm.stringWidth(seg.processId);
-                    int textX = x + (width - textWidth) / 2;
-                    int textY = startY + (barHeight - fm.getHeight()) / 2 + fm.getAscent();
-                    g2.drawString(seg.processId, textX, textY);
-                }
-
-                g2.setFont(new Font("Arial", Font.PLAIN, 14));
-                String startTimeStr = String.valueOf(seg.startTime);
-                g2.drawString(startTimeStr, x - fm.stringWidth(startTimeStr) / 2, startY + barHeight + 20);
-
-                if (i == segments.size() - 1) {
-                    String endTimeStr = String.valueOf(seg.endTime);
-                    g2.drawString(endTimeStr, nextX - fm.stringWidth(endTimeStr) / 2, startY + barHeight + 20);
-                }
-            }
-        }
     }
 }
