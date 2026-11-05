@@ -6,6 +6,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
 
 public class RoundRobinPanel extends JPanel {
 
@@ -13,6 +15,7 @@ public class RoundRobinPanel extends JPanel {
     private JTextField quantumField;
     private JLabel processesErrorLabel; 
     private JLabel quantumErrorLabel;
+    private JLabel tableErrorLabel; 
     private JTable resultTable;
     private DefaultTableModel tableModel;
 
@@ -187,7 +190,7 @@ public class RoundRobinPanel extends JPanel {
         tableModel = new DefaultTableModel(headers, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 0;
+                return column <= 2;
             }
         };
 
@@ -237,11 +240,47 @@ public class RoundRobinPanel extends JPanel {
         idEditor.setClickCountToStart(1);
         resultTable.getColumnModel().getColumn(0).setCellEditor(idEditor);
 
+        resultTable.getColumnModel().getColumn(1).setCellEditor(createNumberEditor());
+        resultTable.getColumnModel().getColumn(2).setCellEditor(createNumberEditor());
+
         resultTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+
+        tableErrorLabel = createErrorLabel();
+        tableErrorLabel.setPreferredSize(new Dimension(0, 28));
 
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
+        tablePanel.add(tableErrorLabel, BorderLayout.NORTH);
         tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
         return tablePanel;
+    }
+
+    private DefaultCellEditor createNumberEditor() {
+        JTextField numberField = new JTextField();
+        numberField.setFont(new Font("Arial", Font.PLAIN, 14));
+        numberField.setHorizontalAlignment(SwingConstants.CENTER);
+        numberField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+        ((AbstractDocument) numberField.getDocument()).setDocumentFilter(new LimitedIntegerFilter(
+                4,
+                () -> tableErrorLabel.setText("Please input only from 0 to 9999"),
+                () -> tableErrorLabel.setText("")));
+
+        DefaultCellEditor numberEditor = new DefaultCellEditor(numberField);
+        numberEditor.setClickCountToStart(1);
+
+        numberEditor.addCellEditorListener(new CellEditorListener() {
+            @Override
+            public void editingStopped(ChangeEvent e) {
+                tableErrorLabel.setText("");
+            }
+
+            @Override
+            public void editingCanceled(ChangeEvent e) {
+                tableErrorLabel.setText("");
+            }
+        });
+
+        return numberEditor;
     }
 }

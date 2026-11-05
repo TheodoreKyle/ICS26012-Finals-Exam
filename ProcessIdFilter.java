@@ -29,7 +29,6 @@ public class ProcessIdFilter extends DocumentFilter {
                 + (text == null ? "" : text)
                 + current.substring(offset + length);
 
-        // Keep digits only, then always put the "P" back in front
         String digitsOnly = newText.replaceAll("[^0-9]", "");
         fb.replace(0, doc.getLength(), PREFIX + digitsOnly, attrs);
     }
