@@ -24,7 +24,11 @@ public class RoundRobinPanel extends JPanel {
     private JLabel processesErrorLabel; 
     private JLabel quantumErrorLabel;
     private JLabel tableErrorLabel; 
-    private JLabel idleTimeLabel;
+    
+    // Replaced idleTimeLabel with CPU and Throughput labels
+    private JLabel cpuUtilLabel;
+    private JLabel throughputLabel;
+    
     private JTable resultTable;
     private JButton calculateButton; 
     private DefaultTableModel tableModel;
@@ -192,9 +196,7 @@ public class RoundRobinPanel extends JPanel {
             "Completion Time",
             "Turn Around Time",
             "Waiting Time",
-            "Response Time",
-            "CPU Utilization",
-            "Throughput"
+            "Response Time"
         };
 
         tableModel = new DefaultTableModel(headers, 0) {
@@ -249,28 +251,43 @@ public class RoundRobinPanel extends JPanel {
         calculateButton = createCalculateButton();
         calculateButton.addActionListener(e -> calculate());
 
-        idleTimeLabel = new JLabel("");
-        idleTimeLabel.setFont(new Font("Arial", Font.BOLD, 18));
-        idleTimeLabel.setForeground(new Color(0, 100, 0));
+        // Setup CPU Utilization and Throughput Labels
+        cpuUtilLabel = new JLabel("");
+        cpuUtilLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        cpuUtilLabel.setForeground(new Color(0, 100, 0));
+
+        throughputLabel = new JLabel("");
+        throughputLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        throughputLabel.setForeground(new Color(0, 100, 0));
+
+        // Group labels to stack vertically beside the Calculate button
+        JPanel statsPanel = new JPanel(new GridLayout(2, 1, 0, 5));
+        statsPanel.setOpaque(false); // Make it blend with background
+        statsPanel.add(cpuUtilLabel);
+        statsPanel.add(throughputLabel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
         buttonPanel.add(calculateButton);
         buttonPanel.add(Box.createHorizontalStrut(20));
-        buttonPanel.add(idleTimeLabel); 
+        buttonPanel.add(statsPanel); 
 
         ganttChartPanel = new GanttChartPanel();
-        ganttChartPanel.setPreferredSize(new Dimension(800, 100));
+        
+        JScrollPane ganttScrollPane = new JScrollPane(ganttChartPanel);
+        ganttScrollPane.setPreferredSize(new Dimension(800, 120)); 
+        ganttScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        ganttScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        ganttScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.add(buttonPanel, BorderLayout.NORTH);
-        southPanel.add(ganttChartPanel, BorderLayout.CENTER);
+        southPanel.add(ganttScrollPane, BorderLayout.CENTER); 
 
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         tablePanel.add(tableErrorLabel, BorderLayout.NORTH);
         tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
         
-        // FIX: Add southPanel instead of buttonPanel directly
         tablePanel.add(southPanel, BorderLayout.SOUTH); 
         return tablePanel;
     }
@@ -283,14 +300,16 @@ public class RoundRobinPanel extends JPanel {
         if (hasIncompleteInputs()) {
             showTableError("Please input all fields");
             ganttChartPanel.clear();
-            idleTimeLabel.setText("");
+            cpuUtilLabel.setText("");
+            throughputLabel.setText("");
             return;
         }
 
         if (hasDuplicateProcessIds()) {
             showTableError("No Process ID should be the same");
             ganttChartPanel.clear();
-            idleTimeLabel.setText("");
+            cpuUtilLabel.setText("");
+            throughputLabel.setText("");
             return;
         }
 
@@ -306,7 +325,6 @@ public class RoundRobinPanel extends JPanel {
         for (int i = 0; i < n; i++) {
             String id = tableModel.getValueAt(i, 0).toString();
             
-            // FIX: Treat blank arrival time as 0
             Object atObj = tableModel.getValueAt(i, 1);
             int at = isBlank(atObj) ? 0 : Integer.parseInt(atObj.toString());
             
@@ -322,17 +340,23 @@ public class RoundRobinPanel extends JPanel {
         int completed = 0;
         int index = 0;
 
-        if (processes.get(0).at > currentTime) {
-            segments.add (new GanttSegment("Idle", currentTime, processes.get(0).at));
+       if (processes.get(0).at > currentTime) {
+            segments.add(new GanttSegment("Idle", currentTime, processes.get(0).at));
             currentTime = processes.get(0).at;
+        }
+
+        while (index < n && processes.get(index).at <= currentTime) {
+            queue.add(processes.get(index++));
         }
 
         while (completed < n) {
             if (queue.isEmpty()) {
                 if (index < n) {
                     int nextArrival = processes.get(index).at;
-                    segments.add(new GanttSegment("Idle", currentTime, nextArrival));
-                    currentTime = nextArrival; 
+                    if (nextArrival > currentTime) {
+                        segments.add(new GanttSegment("Idle", currentTime, nextArrival));
+                        currentTime = nextArrival; 
+                    }
                     while (index < n && processes.get(index).at <= currentTime) {
                         queue.add(processes.get(index++));                         
                     }
@@ -381,11 +405,12 @@ public class RoundRobinPanel extends JPanel {
             tableModel.setValueAt(p.tat, p.rowIndex, 4);
             tableModel.setValueAt(p.wt, p.rowIndex, 5);
             tableModel.setValueAt(p.rt, p.rowIndex, 6);
-            tableModel.setValueAt(String.format("%.2f%%", cpuUtil), p.rowIndex, 7);
-            tableModel.setValueAt(String.format("%.4f", throughput), p.rowIndex, 8);
         }
 
-        idleTimeLabel.setText("Total Idle Time: " + totalIdleTime + " ms");
+        // Output CPU Utilization and Throughput directly to the UI labels
+        cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
+        throughputLabel.setText(String.format("Throughput: %.4f", throughput));
+        
         ganttChartPanel.setSegments(segments);
     }
 
@@ -402,7 +427,6 @@ public class RoundRobinPanel extends JPanel {
             Object id = tableModel.getValueAt(row, 0);
             Object burst = tableModel.getValueAt(row, 2);
 
-            // Arrival Time isn't checked here anymore so blank is permitted
             if (isBlank(id) || id.toString().equals("P") || isBlank(burst)) {
                 return true;
             }
@@ -515,11 +539,41 @@ public class RoundRobinPanel extends JPanel {
 
         public void setSegments(List<GanttSegment> segments) {
             this.segments = segments;
+            
+            if (segments == null || segments.isEmpty()) return;
+
+            int minTime = segments.get(0).startTime;
+            int maxTime = segments.get(segments.size() - 1).endTime;
+            int totalDuration = maxTime - minTime;
+            
+            if (totalDuration == 0) return;
+
+            int minSegmentDuration = Integer.MAX_VALUE;
+            for (GanttSegment seg : segments) {
+                int duration = seg.endTime - seg.startTime;
+                if (duration > 0 && duration < minSegmentDuration) {
+                    minSegmentDuration = duration;
+                }
+            }
+            
+            if (minSegmentDuration == Integer.MAX_VALUE) {
+                minSegmentDuration = 1;
+            }
+
+            int calculatedWidth = (totalDuration * 45) / minSegmentDuration;
+            
+            int finalWidth = Math.max(800, Math.min(calculatedWidth, 30000));
+            
+            setPreferredSize(new Dimension(finalWidth, 100));
+            
+            revalidate(); 
             repaint();
         }
 
         public void clear() {
             this.segments.clear();
+            setPreferredSize(new Dimension(800, 100)); 
+            revalidate();
             repaint();
         }
 
@@ -531,7 +585,7 @@ public class RoundRobinPanel extends JPanel {
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int paddingX = 10;
+            int paddingX = 30;
             int startY = 15;
             int barHeight = 45;
             int totalWidth = getWidth() - 2 * paddingX;
@@ -547,6 +601,10 @@ public class RoundRobinPanel extends JPanel {
             for (int i = 0; i < segments.size(); i++) {
                 GanttSegment seg = segments.get(i);
                 
+                if (seg.startTime == seg.endTime) {
+                    continue;
+                }
+                
                 int x = paddingX + (int) ((double) (seg.startTime - minTime) / totalDuration * totalWidth);
                 int nextX = paddingX + (int) ((double) (seg.endTime - minTime) / totalDuration * totalWidth);
                 int width = nextX - x;
@@ -561,15 +619,15 @@ public class RoundRobinPanel extends JPanel {
                 g2.setColor(Color.BLACK);
                 g2.drawRect(x, startY, width, barHeight);
 
-                g2.setFont(new Font("Arial", Font.PLAIN, 16));
-                
-                g2.setColor(seg.processId.equals("Idle") ? Color.GRAY : Color.BLACK);
-                int textWidth = fm.stringWidth(seg.processId);
-                int textX = x + (width - textWidth) / 2;
-                int textY = startY + (barHeight - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(seg.processId, textX, textY);
+                if (!seg.processId.equals("Idle")) {
+                    g2.setFont(new Font("Arial", Font.PLAIN, 16));
+                    g2.setColor(Color.BLACK);
+                    int textWidth = fm.stringWidth(seg.processId);
+                    int textX = x + (width - textWidth) / 2;
+                    int textY = startY + (barHeight - fm.getHeight()) / 2 + fm.getAscent();
+                    g2.drawString(seg.processId, textX, textY);
+                }
 
-                // Draw time markers
                 g2.setFont(new Font("Arial", Font.PLAIN, 14));
                 String startTimeStr = String.valueOf(seg.startTime);
                 g2.drawString(startTimeStr, x - fm.stringWidth(startTimeStr) / 2, startY + barHeight + 20);
