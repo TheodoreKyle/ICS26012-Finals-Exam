@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashSet;
+import java.util.Set;
 import javax.swing.text.AbstractDocument;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -244,6 +246,7 @@ public class RoundRobinPanel extends JPanel {
         tableErrorLabel.setPreferredSize(new Dimension(0, 28));
 
         calculateButton = createCalculateButton();
+        calculateButton.addActionListener(e -> calculate());
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
         buttonPanel.add(calculateButton);
 
@@ -253,6 +256,61 @@ public class RoundRobinPanel extends JPanel {
         tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
         tablePanel.add(buttonPanel, BorderLayout.SOUTH); 
         return tablePanel;
+    }
+
+    private void calculate() {
+        if (resultTable.isEditing()) {
+            resultTable.getCellEditor().stopCellEditing();
+        }
+
+        if (hasIncompleteInputs()) {
+            showTableError("Please input all fields");
+            return;
+        }
+
+        if (hasDuplicateProcessIds()) {
+            showTableError("No Process ID should be the same");
+            return;
+        }
+
+        showTableError("");
+    }
+
+    private boolean hasIncompleteInputs() {
+        if (!processesField.getText().matches("1[0-9]|20")) {
+            return true;
+        }
+
+        if (!quantumField.getText().matches("[1-9][0-9]?")) {
+            return true;
+        }
+
+        for (int row = 0; row < tableModel.getRowCount(); row++) {
+            Object id = tableModel.getValueAt(row, 0);
+            Object burst = tableModel.getValueAt(row, 2);
+
+            if (isBlank(id) || id.toString().equals("P") || isBlank(burst)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isBlank(Object value) {
+        return value == null || value.toString().trim().isEmpty();
+    }
+
+    private boolean hasDuplicateProcessIds() {
+        Set<String> seenIds = new HashSet<>();
+
+        for (int row = 0; row < tableModel.getRowCount(); row++) {
+            String id = String.valueOf(tableModel.getValueAt(row, 0));
+            if (!seenIds.add(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private JButton createCalculateButton() {
