@@ -1,7 +1,12 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
+import java.util.List;
 import javax.swing.text.AbstractDocument;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -19,9 +24,11 @@ public class RoundRobinPanel extends JPanel {
     private JLabel processesErrorLabel; 
     private JLabel quantumErrorLabel;
     private JLabel tableErrorLabel; 
+    private JLabel idleTimeLabel;
     private JTable resultTable;
     private JButton calculateButton; 
     private DefaultTableModel tableModel;
+    private GanttChartPanel ganttChartPanel; 
 
     public RoundRobinPanel(Runnable onBack) {
         setLayout(new BorderLayout());
@@ -119,19 +126,13 @@ public class RoundRobinPanel extends JPanel {
     private void onTextChange(JTextField field, Runnable action) {
         field.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                action.run();
-            }
+            public void insertUpdate(DocumentEvent e) { action.run(); }
 
             @Override
-            public void removeUpdate(DocumentEvent e) {
-                action.run();
-            }
+            public void removeUpdate(DocumentEvent e) { action.run(); }
 
             @Override
-            public void changedUpdate(DocumentEvent e) {
-                action.run();
-            }
+            public void changedUpdate(DocumentEvent e) { action.run(); }
         });
     }
 
@@ -247,14 +248,30 @@ public class RoundRobinPanel extends JPanel {
 
         calculateButton = createCalculateButton();
         calculateButton.addActionListener(e -> calculate());
+
+        idleTimeLabel = new JLabel("");
+        idleTimeLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        idleTimeLabel.setForeground(new Color(0, 100, 0));
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
         buttonPanel.add(calculateButton);
+        buttonPanel.add(Box.createHorizontalStrut(20));
+        buttonPanel.add(idleTimeLabel); 
+
+        ganttChartPanel = new GanttChartPanel();
+        ganttChartPanel.setPreferredSize(new Dimension(800, 100));
+
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.add(buttonPanel, BorderLayout.NORTH);
+        southPanel.add(ganttChartPanel, BorderLayout.CENTER);
 
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
         tablePanel.add(tableErrorLabel, BorderLayout.NORTH);
         tablePanel.add(new JScrollPane(resultTable), BorderLayout.CENTER);
-        tablePanel.add(buttonPanel, BorderLayout.SOUTH); 
+        
+        // FIX: Add southPanel instead of buttonPanel directly
+        tablePanel.add(southPanel, BorderLayout.SOUTH); 
         return tablePanel;
     }
 
@@ -265,15 +282,111 @@ public class RoundRobinPanel extends JPanel {
 
         if (hasIncompleteInputs()) {
             showTableError("Please input all fields");
+            ganttChartPanel.clear();
+            idleTimeLabel.setText("");
             return;
         }
 
         if (hasDuplicateProcessIds()) {
             showTableError("No Process ID should be the same");
+            ganttChartPanel.clear();
+            idleTimeLabel.setText("");
             return;
         }
 
         showTableError("");
+        executeRoundRobin();
+    }
+
+    private void executeRoundRobin() {
+        int n = tableModel.getRowCount();
+        int quantum = Integer.parseInt(quantumField.getText());
+        List<ProcessData> processes = new ArrayList<>();
+
+        for (int i = 0; i < n; i++) {
+            String id = tableModel.getValueAt(i, 0).toString();
+            
+            // FIX: Treat blank arrival time as 0
+            Object atObj = tableModel.getValueAt(i, 1);
+            int at = isBlank(atObj) ? 0 : Integer.parseInt(atObj.toString());
+            
+            int bt = Integer.parseInt(tableModel.getValueAt(i, 2).toString());
+            processes.add(new ProcessData(id, at, bt, i));
+        }
+
+        processes.sort(Comparator.comparingInt(p -> p.at));
+
+        List<GanttSegment> segments = new ArrayList<>();
+        Queue<ProcessData> queue = new LinkedList<>();
+        int currentTime = 0;
+        int completed = 0;
+        int index = 0;
+
+        if (processes.get(0).at > currentTime) {
+            segments.add (new GanttSegment("Idle", currentTime, processes.get(0).at));
+            currentTime = processes.get(0).at;
+        }
+
+        while (completed < n) {
+            if (queue.isEmpty()) {
+                if (index < n) {
+                    int nextArrival = processes.get(index).at;
+                    segments.add(new GanttSegment("Idle", currentTime, nextArrival));
+                    currentTime = nextArrival; 
+                    while (index < n && processes.get(index).at <= currentTime) {
+                        queue.add(processes.get(index++));                         
+                    }
+                }
+            } else {
+                ProcessData current = queue.poll();
+                
+                if (current.firstTime) {
+                    current.rt = currentTime - current.at;
+                    current.firstTime = false;
+                }
+
+                int executeTime = Math.min(quantum, current.remBt);
+                segments.add(new GanttSegment(current.id, currentTime, currentTime + executeTime));
+                currentTime += executeTime;
+                current.remBt -= executeTime;
+
+                // Priority Rule: Enqueue new arrivals first
+                while (index < n && processes.get(index).at <= currentTime) {
+                    queue.add(processes.get(index++));
+                }
+
+                // Then enqueue preempted process
+                if (current.remBt > 0) {
+                    queue.add(current);
+                } else {
+                    current.ct = currentTime;
+                    current.tat = current.ct - current.at;
+                    current.wt = current.tat - current.bt;
+                    completed++;
+                }
+            }
+        }
+
+        double totalTime = currentTime;
+        int totalIdleTime = segments.stream()
+                .filter(s -> s.processId.equals("Idle"))
+                .mapToInt(s -> s.endTime - s.startTime)
+                .sum();
+                
+        double cpuUtil = ((totalTime - totalIdleTime) / totalTime) * 100.0;
+        double throughput = (double) n / totalTime;
+
+        for (ProcessData p : processes) {
+            tableModel.setValueAt(p.ct, p.rowIndex, 3);
+            tableModel.setValueAt(p.tat, p.rowIndex, 4);
+            tableModel.setValueAt(p.wt, p.rowIndex, 5);
+            tableModel.setValueAt(p.rt, p.rowIndex, 6);
+            tableModel.setValueAt(String.format("%.2f%%", cpuUtil), p.rowIndex, 7);
+            tableModel.setValueAt(String.format("%.4f", throughput), p.rowIndex, 8);
+        }
+
+        idleTimeLabel.setText("Total Idle Time: " + totalIdleTime + " ms");
+        ganttChartPanel.setSegments(segments);
     }
 
     private boolean hasIncompleteInputs() {
@@ -289,6 +402,7 @@ public class RoundRobinPanel extends JPanel {
             Object id = tableModel.getValueAt(row, 0);
             Object burst = tableModel.getValueAt(row, 2);
 
+            // Arrival Time isn't checked here anymore so blank is permitted
             if (isBlank(id) || id.toString().equals("P") || isBlank(burst)) {
                 return true;
             }
@@ -366,5 +480,105 @@ public class RoundRobinPanel extends JPanel {
 
     private void showTableError(String message) {
         tableErrorLabel.setText(message);
+    }
+
+    // STARTING HERE IS THE GANTT CHART, TO BE DELETED IF A FAILURE
+
+    private static class ProcessData {
+        String id;
+        int at, bt, remBt, ct, tat, wt, rt, rowIndex;
+        boolean firstTime = true;
+
+        ProcessData(String id, int at, int bt, int rowIndex) {
+            this.id = (!id.startsWith("P")) ? "P" + id : id;
+            this.at = at;
+            this.bt = bt;
+            this.remBt = bt;
+            this.rowIndex = rowIndex;
+        }
+    }
+
+    private static class GanttSegment {
+        String processId;
+        int startTime;
+        int endTime;
+
+        GanttSegment(String processId, int startTime, int endTime) {
+            this.processId = processId;
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+    }
+
+    private static class GanttChartPanel extends JPanel {
+        private List<GanttSegment> segments = new ArrayList<>();
+
+        public void setSegments(List<GanttSegment> segments) {
+            this.segments = segments;
+            repaint();
+        }
+
+        public void clear() {
+            this.segments.clear();
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (segments == null || segments.isEmpty()) return;
+
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int paddingX = 10;
+            int startY = 15;
+            int barHeight = 45;
+            int totalWidth = getWidth() - 2 * paddingX;
+
+            int minTime = segments.get(0).startTime;
+            int maxTime = segments.get(segments.size() - 1).endTime;
+            int totalDuration = maxTime - minTime;
+
+            if (totalDuration == 0) return;
+
+            FontMetrics fm = g2.getFontMetrics();
+
+            for (int i = 0; i < segments.size(); i++) {
+                GanttSegment seg = segments.get(i);
+                
+                int x = paddingX + (int) ((double) (seg.startTime - minTime) / totalDuration * totalWidth);
+                int nextX = paddingX + (int) ((double) (seg.endTime - minTime) / totalDuration * totalWidth);
+                int width = nextX - x;
+
+                if (seg.processId.equals("Idle")) {
+                    g2.setColor(Color.WHITE);
+                } else {
+                    g2.setColor(new Color(235, 235, 235)); 
+                }
+                
+                g2.fillRect(x, startY, width, barHeight);
+                g2.setColor(Color.BLACK);
+                g2.drawRect(x, startY, width, barHeight);
+
+                g2.setFont(new Font("Arial", Font.PLAIN, 16));
+                
+                g2.setColor(seg.processId.equals("Idle") ? Color.GRAY : Color.BLACK);
+                int textWidth = fm.stringWidth(seg.processId);
+                int textX = x + (width - textWidth) / 2;
+                int textY = startY + (barHeight - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(seg.processId, textX, textY);
+
+                // Draw time markers
+                g2.setFont(new Font("Arial", Font.PLAIN, 14));
+                String startTimeStr = String.valueOf(seg.startTime);
+                g2.drawString(startTimeStr, x - fm.stringWidth(startTimeStr) / 2, startY + barHeight + 20);
+
+                if (i == segments.size() - 1) {
+                    String endTimeStr = String.valueOf(seg.endTime);
+                    g2.drawString(endTimeStr, nextX - fm.stringWidth(endTimeStr) / 2, startY + barHeight + 20);
+                }
+            }
+        }
     }
 }
