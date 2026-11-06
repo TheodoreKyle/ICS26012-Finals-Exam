@@ -22,7 +22,11 @@ public class MainFrame extends JFrame {
         setSize(1450, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout());  
+        java.net.URL iconUrl = getClass().getResource("/blackhathacker.png");
+        if (iconUrl != null) {
+            setIconImage(new ImageIcon(iconUrl).getImage());
+        }
     }
 
     private void initializeComponents() {
