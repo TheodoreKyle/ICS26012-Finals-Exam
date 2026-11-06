@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -227,9 +228,70 @@ public class RoundRobinPanel extends JPanel {
         resultTable.setShowGrid(true);
         resultTable.setGridColor(Color.GRAY);
 
-        resultTable.setRowSelectionAllowed(false);
-        resultTable.setColumnSelectionAllowed(false);
-        resultTable.setFocusable(false);
+        resultTable.setRowSelectionAllowed(true);
+        resultTable.setColumnSelectionAllowed(true);
+
+        resultTable.setCellSelectionEnabled(true); 
+        resultTable.setSurrendersFocusOnKeystroke(true);
+        resultTable.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+
+        InputMap im = resultTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        ActionMap am = resultTable.getActionMap();
+
+        im.put(KeyStroke.getKeyStroke("ENTER"), "Action.enter");
+        am.put("Action.enter", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                int row = resultTable.getSelectedRow();
+                int col = resultTable.getSelectedColumn();
+                
+                // Prevent out-of-bounds error if no cell is selected
+                if (row == -1 || col == -1) return;
+                
+                if (resultTable.isEditing()) {
+                    resultTable.getCellEditor().stopCellEditing();
+                }
+                
+                if (row < resultTable.getRowCount() - 1) {
+                    resultTable.changeSelection(row + 1, col, false, false);
+                    if (resultTable.isCellEditable(row + 1, col)) {
+                        resultTable.editCellAt(row + 1, col);
+                        // Null check prevents the NullPointerException
+                        Component editor = resultTable.getEditorComponent();
+                        if (editor != null) {
+                            editor.requestFocusInWindow();
+                        }
+                    }
+                }
+            }
+        });
+
+        im.put(KeyStroke.getKeyStroke("TAB"), "Action.tab");
+        am.put("Action.tab", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                int row = resultTable.getSelectedRow();
+                int col = resultTable.getSelectedColumn();
+                
+                if (row == -1 || col == -1) return;
+                
+                if (resultTable.isEditing()) {
+                    resultTable.getCellEditor().stopCellEditing();
+                }
+                
+                // Only move to the right if the next column is editable
+                if (col < 2) {
+                    resultTable.changeSelection(row, col + 1, false, false);
+                    if (resultTable.isCellEditable(row, col + 1)) {
+                        resultTable.editCellAt(row, col + 1);
+                        Component editor = resultTable.getEditorComponent();
+                        if (editor != null) {
+                            editor.requestFocusInWindow();
+                        }
+                    }
+                }
+            }
+        });
 
         JTableHeader tableHeader = resultTable.getTableHeader();
         tableHeader.setFont(new Font("Arial", Font.BOLD, 14));
@@ -308,15 +370,16 @@ public class RoundRobinPanel extends JPanel {
 
         JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
         avgsPanel.setOpaque(false);
-        avgsPanel.add(new JLabel("")); // Spacer to align with totals
+        avgsPanel.add(new JLabel("")); 
         avgsPanel.add(avgTatLabel);
         avgsPanel.add(avgWtLabel);
 
         JPanel bottomStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 10));
         bottomStatsPanel.add(sumsPanel);
+
+        bottomStatsPanel.add(Box.createHorizontalStrut(120));
         bottomStatsPanel.add(avgsPanel);
 
-        // Put button, gantt chart, and bottom stats into the south layout
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.add(buttonPanel, BorderLayout.NORTH);
         southPanel.add(ganttScrollPane, BorderLayout.CENTER);
@@ -480,12 +543,15 @@ public class RoundRobinPanel extends JPanel {
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
         throughputLabel.setText(String.format("Throughput: %.4f", throughput));
         
-        totalCtLabel.setText(String.format("Total Completion Time: %.2f", sumCt));
-        totalTatLabel.setText(String.format("Total Turn Around Time: %.2f", sumTat));
-        totalWtLabel.setText(String.format("Total Waiting Time: %.2f", sumWt));
+        // Define standard formatter for up to 2 decimal places excluding trailing zeros
+        DecimalFormat df = new DecimalFormat("0.##");
         
-        avgTatLabel.setText(String.format("Average Turn Around Time: %.2f", (sumTat / n)));
-        avgWtLabel.setText(String.format("Average Waiting Time: %.2f", (sumWt / n)));
+        totalCtLabel.setText("Total Completion Time: " + df.format(sumCt) + "ms");
+        totalTatLabel.setText("Total Turn Around Time: " + df.format(sumTat) + "ms");
+        totalWtLabel.setText("Total Waiting Time: " + df.format(sumWt) + "ms");
+        
+        avgTatLabel.setText("Average Turn Around Time: " + df.format(sumTat / n) + "ms");
+        avgWtLabel.setText("Average Waiting Time: " + df.format(sumWt / n) + "ms");
         
         ganttChartPanel.setSegments(segments);
     }
@@ -572,6 +638,16 @@ public class RoundRobinPanel extends JPanel {
             @Override
             public void editingCanceled(ChangeEvent e) {
                 showTableError("");
+            }
+        });
+
+        InputMap fieldIm = cellField.getInputMap(JComponent.WHEN_FOCUSED);
+        fieldIm.put(KeyStroke.getKeyStroke("ENTER"), "none");
+        fieldIm.put(KeyStroke.getKeyStroke("TAB"), "none");
+
+        cellField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                SwingUtilities.invokeLater(cellField::selectAll);
             }
         });
 
