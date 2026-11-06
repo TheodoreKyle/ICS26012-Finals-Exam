@@ -31,6 +31,7 @@ public class RoundRobinPanel extends JPanel {
     private JLabel totalCtLabel;
     private JLabel totalTatLabel;
     private JLabel totalWtLabel;
+    private JLabel avgCtLabel;
     private JLabel avgTatLabel;
     private JLabel avgWtLabel;
     
@@ -361,6 +362,7 @@ public class RoundRobinPanel extends JPanel {
         totalCtLabel = createStatLabel("");
         totalTatLabel = createStatLabel("");
         totalWtLabel = createStatLabel("");
+        avgCtLabel = createStatLabel("");
         avgTatLabel = createStatLabel("");
         avgWtLabel = createStatLabel("");
 
@@ -373,6 +375,7 @@ public class RoundRobinPanel extends JPanel {
         JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
         avgsPanel.setOpaque(false);
         avgsPanel.add(new JLabel("")); 
+        avgsPanel.add(avgCtLabel);
         avgsPanel.add(avgTatLabel);
         avgsPanel.add(avgWtLabel);
 
@@ -452,6 +455,7 @@ public class RoundRobinPanel extends JPanel {
         totalCtLabel.setText("");
         totalTatLabel.setText("");
         totalWtLabel.setText("");
+        avgCtLabel.setText("");
         avgTatLabel.setText("");
         avgWtLabel.setText("");
     }
@@ -559,7 +563,7 @@ public class RoundRobinPanel extends JPanel {
         }
 
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
-        throughputLabel.setText(String.format("Throughput: %.4f", throughput));
+        throughputLabel.setText(String.format("Throughput: %.4f processes per ms", throughput));
         
         DecimalFormat df = new DecimalFormat("0.##");
         
@@ -567,6 +571,7 @@ public class RoundRobinPanel extends JPanel {
         totalTatLabel.setText("Total Turn Around Time: " + df.format(sumTat) + "ms");
         totalWtLabel.setText("Total Waiting Time: " + df.format(sumWt) + "ms");
         
+        avgCtLabel.setText("Average Completion Time: " + df.format(sumCt / n) + "ms");
         avgTatLabel.setText("Average Turn Around Time: " + df.format(sumTat / n) + "ms");
         avgWtLabel.setText("Average Waiting Time: " + df.format(sumWt / n) + "ms");
         
