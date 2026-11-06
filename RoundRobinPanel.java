@@ -28,7 +28,6 @@ public class RoundRobinPanel extends JPanel {
     private JLabel cpuUtilLabel;
     private JLabel throughputLabel;
     
-    // New total and average labels
     private JLabel totalCtLabel;
     private JLabel totalTatLabel;
     private JLabel totalWtLabel;
@@ -36,6 +35,7 @@ public class RoundRobinPanel extends JPanel {
     private JLabel avgWtLabel;
     
     private JTable resultTable;
+    private JButton clearAllButton;
     private JButton calculateButton; 
     private DefaultTableModel tableModel;
     private GanttChartPanel ganttChartPanel; 
@@ -279,7 +279,6 @@ public class RoundRobinPanel extends JPanel {
                     resultTable.getCellEditor().stopCellEditing();
                 }
                 
-                // Only move to the right if the next column is editable
                 if (col < 2) {
                     resultTable.changeSelection(row, col + 1, false, false);
                     if (resultTable.isCellEditable(row, col + 1)) {
@@ -325,6 +324,9 @@ public class RoundRobinPanel extends JPanel {
         tableErrorLabel = createErrorLabel();
         tableErrorLabel.setPreferredSize(new Dimension(0, 28));
 
+        clearAllButton = createClearAllButton();
+        clearAllButton.addActionListener(e -> clearAll());
+
         calculateButton = createCalculateButton();
         calculateButton.addActionListener(e -> calculate());
 
@@ -342,6 +344,8 @@ public class RoundRobinPanel extends JPanel {
         statsPanel.add(throughputLabel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
+        buttonPanel.add(clearAllButton);
+        buttonPanel.add(Box.createHorizontalStrut(15)); 
         buttonPanel.add(calculateButton);
         buttonPanel.add(Box.createHorizontalStrut(20));
         buttonPanel.add(statsPanel); 
@@ -354,14 +358,12 @@ public class RoundRobinPanel extends JPanel {
         ganttScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         ganttScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
-        // Initialize sum and average labels
         totalCtLabel = createStatLabel("");
         totalTatLabel = createStatLabel("");
         totalWtLabel = createStatLabel("");
         avgTatLabel = createStatLabel("");
         avgWtLabel = createStatLabel("");
 
-        // Setup the totals panel
         JPanel sumsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
         sumsPanel.setOpaque(false);
         sumsPanel.add(totalCtLabel);
@@ -404,6 +406,22 @@ public class RoundRobinPanel extends JPanel {
         label.setFont(new Font("Arial", Font.BOLD, 16));
         label.setForeground(Color.BLACK);
         return label;
+    }
+
+    private void clearAll() {
+        if (resultTable.isEditing()) {
+            resultTable.getCellEditor().stopCellEditing();
+        }
+
+        processesField.setText("");
+        quantumField.setText("");
+
+        processesErrorLabel.setText("");
+        quantumErrorLabel.setText("");
+        tableErrorLabel.setText("");
+
+        tableModel.setRowCount(0);
+        clearOutputs();
     }
 
     private void calculate() {
@@ -543,7 +561,6 @@ public class RoundRobinPanel extends JPanel {
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
         throughputLabel.setText(String.format("Throughput: %.4f", throughput));
         
-        // Define standard formatter for up to 2 decimal places excluding trailing zeros
         DecimalFormat df = new DecimalFormat("0.##");
         
         totalCtLabel.setText("Total Completion Time: " + df.format(sumCt) + "ms");
@@ -591,6 +608,31 @@ public class RoundRobinPanel extends JPanel {
             }
         }
         return false;
+    }
+
+    private JButton createClearAllButton() {
+        JButton button = new JButton("Clear All");
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(220, 60));
+        button.setFont(new Font("Arial", Font.BOLD, 24));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(180, 0, 0)); 
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color clearNormalColor = new Color(180, 0, 0);
+        Color clearPressedColor = new Color(130, 0, 0);
+
+        button.getModel().addChangeListener(e -> {
+            if (button.getModel().isPressed()) {
+                button.setBackground(clearPressedColor);
+            } else {
+                button.setBackground(clearNormalColor);
+            }
+        });
+
+        return button;
     }
 
     private JButton createCalculateButton() {
