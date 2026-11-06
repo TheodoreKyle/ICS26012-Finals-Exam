@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.List;
+import java.util.Random;
 import javax.swing.text.AbstractDocument;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -36,6 +37,7 @@ public class RoundRobinPanel extends JPanel {
     private JLabel avgWtLabel;
     
     private JTable resultTable;
+    private JButton generateRandomButton;
     private JButton clearAllButton;
     private JButton calculateButton; 
     private DefaultTableModel tableModel;
@@ -325,6 +327,9 @@ public class RoundRobinPanel extends JPanel {
         tableErrorLabel = createErrorLabel();
         tableErrorLabel.setPreferredSize(new Dimension(0, 28));
 
+        generateRandomButton = createGenerateRandomButton();
+        generateRandomButton.addActionListener(e -> generateRandomInputs());
+
         clearAllButton = createClearAllButton();
         clearAllButton.addActionListener(e -> clearAll());
 
@@ -345,6 +350,8 @@ public class RoundRobinPanel extends JPanel {
         statsPanel.add(throughputLabel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 15));
+        buttonPanel.add(generateRandomButton);
+        buttonPanel.add(Box.createHorizontalStrut(15));
         buttonPanel.add(clearAllButton);
         buttonPanel.add(Box.createHorizontalStrut(15)); 
         buttonPanel.add(calculateButton);
@@ -408,6 +415,47 @@ public class RoundRobinPanel extends JPanel {
         label.setFont(new Font("Arial", Font.BOLD, 16));
         label.setForeground(Color.BLACK);
         return label;
+    }
+
+    private void generateRandomInputs() {
+        if (resultTable.isEditing()) {
+            resultTable.getCellEditor().stopCellEditing();
+        }
+
+        Random rand = new Random();
+
+        String numStr = processesField.getText();
+        if (numStr.isEmpty() || !numStr.matches("1[0-9]|20")) {
+            int randomProcs = 10 + rand.nextInt(11);
+            processesField.setText(String.valueOf(randomProcs));
+        }
+
+        String quantStr = quantumField.getText();
+        if (quantStr.isEmpty() || !quantStr.matches("^([1-9][0-9]?|100)$")) {
+            int randomQuantum = 1 + rand.nextInt(20);
+            quantumField.setText(String.valueOf(randomQuantum));
+        }
+        
+        int rows = tableModel.getRowCount();
+        Set<Integer> usedIDs = new HashSet<>();
+
+        for (int i = 0; i < rows; i++) {
+            int processId;
+            do {
+                processId = rand.nextInt(41); 
+            } while (usedIDs.contains(processId));
+            usedIDs.add(processId);
+
+            int arrivalTime = rand.nextInt(21); 
+            int burstTime = rand.nextInt(20) + 1;
+
+            tableModel.setValueAt("P" + processId, i, 0);
+            tableModel.setValueAt(arrivalTime, i, 1);
+            tableModel.setValueAt(burstTime, i, 2);
+        }
+
+        clearOutputs();
+        tableErrorLabel.setText("");
     }
 
     private void clearAll() {
@@ -612,6 +660,31 @@ public class RoundRobinPanel extends JPanel {
             }
         }
         return false;
+    }
+
+    private JButton createGenerateRandomButton() {
+        JButton button = new JButton("<html><center>Generate Random<br>Inputs</center></html>");
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(220, 60));
+        button.setFont(new Font("Arial", Font.BOLD, 20));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(0, 0, 128));
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
+        Color randomNormalColor = new Color(0, 0, 128);
+        Color randomPressedColor = new Color(0, 0, 90);
+
+        button.getModel().addChangeListener(e -> {
+            if (button.getModel().isPressed()) {
+                button.setBackground(randomPressedColor);
+            } else {
+                button.setBackground(randomNormalColor);
+            }
+        });
+
+        return button;
     }
 
     private JButton createClearAllButton() {
