@@ -98,7 +98,7 @@ public class RoundRobinPanel extends JPanel {
         quantumErrorLabel = createErrorLabel();
 
         addValidation(processesField, processesErrorLabel, "1[0-9]|20", "Please input only from 10 to 20");
-        addValidation(quantumField, quantumErrorLabel, "[1-9][0-9]?", "Please input only from 1 to 99");
+        addValidation(quantumField, quantumErrorLabel, "^([1-9][0-9]?|100)$", "Please input only from 1 to 100");
         onTextChange(processesField, this::updateTableRows);
 
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -578,7 +578,7 @@ public class RoundRobinPanel extends JPanel {
             return true;
         }
 
-        if (!quantumField.getText().matches("[1-9][0-9]?")) {
+        if (!quantumField.getText().matches("^([1-9][0-9]?|100)$")) {
             return true;
         }
 
