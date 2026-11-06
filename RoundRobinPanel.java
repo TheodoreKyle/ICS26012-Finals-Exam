@@ -374,7 +374,6 @@ public class RoundRobinPanel extends JPanel {
 
         JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
         avgsPanel.setOpaque(false);
-        avgsPanel.add(new JLabel("")); 
         avgsPanel.add(avgCtLabel);
         avgsPanel.add(avgTatLabel);
         avgsPanel.add(avgWtLabel);
