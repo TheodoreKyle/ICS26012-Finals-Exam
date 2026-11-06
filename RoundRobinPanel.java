@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -27,6 +26,13 @@ public class RoundRobinPanel extends JPanel {
     
     private JLabel cpuUtilLabel;
     private JLabel throughputLabel;
+    
+    // New total and average labels
+    private JLabel totalCtLabel;
+    private JLabel totalTatLabel;
+    private JLabel totalWtLabel;
+    private JLabel avgTatLabel;
+    private JLabel avgWtLabel;
     
     private JTable resultTable;
     private JButton calculateButton; 
@@ -286,9 +292,35 @@ public class RoundRobinPanel extends JPanel {
         ganttScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         ganttScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
+        // Initialize sum and average labels
+        totalCtLabel = createStatLabel("");
+        totalTatLabel = createStatLabel("");
+        totalWtLabel = createStatLabel("");
+        avgTatLabel = createStatLabel("");
+        avgWtLabel = createStatLabel("");
+
+        // Setup the totals panel
+        JPanel sumsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        sumsPanel.setOpaque(false);
+        sumsPanel.add(totalCtLabel);
+        sumsPanel.add(totalTatLabel);
+        sumsPanel.add(totalWtLabel);
+
+        JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        avgsPanel.setOpaque(false);
+        avgsPanel.add(new JLabel("")); // Spacer to align with totals
+        avgsPanel.add(avgTatLabel);
+        avgsPanel.add(avgWtLabel);
+
+        JPanel bottomStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 10));
+        bottomStatsPanel.add(sumsPanel);
+        bottomStatsPanel.add(avgsPanel);
+
+        // Put button, gantt chart, and bottom stats into the south layout
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.add(buttonPanel, BorderLayout.NORTH);
-        southPanel.add(ganttScrollPane, BorderLayout.CENTER); 
+        southPanel.add(ganttScrollPane, BorderLayout.CENTER);
+        southPanel.add(bottomStatsPanel, BorderLayout.SOUTH);
 
         JPanel tablePanel = new JPanel(new BorderLayout());
         tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 20, 20));
@@ -304,6 +336,13 @@ public class RoundRobinPanel extends JPanel {
         return tablePanel;
     }
 
+    private JLabel createStatLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 16));
+        label.setForeground(Color.BLACK);
+        return label;
+    }
+
     private void calculate() {
         if (resultTable.isEditing()) {
             resultTable.getCellEditor().stopCellEditing();
@@ -311,22 +350,29 @@ public class RoundRobinPanel extends JPanel {
 
         if (hasIncompleteInputs()) {
             showTableError("Please input all fields");
-            ganttChartPanel.clear();
-            cpuUtilLabel.setText("");
-            throughputLabel.setText("");
+            clearOutputs();
             return;
         }
 
         if (hasDuplicateProcessIds()) {
             showTableError("No Process ID should be the same");
-            ganttChartPanel.clear();
-            cpuUtilLabel.setText("");
-            throughputLabel.setText("");
+            clearOutputs();
             return;
         }
 
         showTableError("");
         executeRoundRobin();
+    }
+
+    private void clearOutputs() {
+        ganttChartPanel.clear();
+        cpuUtilLabel.setText("");
+        throughputLabel.setText("");
+        totalCtLabel.setText("");
+        totalTatLabel.setText("");
+        totalWtLabel.setText("");
+        avgTatLabel.setText("");
+        avgWtLabel.setText("");
     }
 
     private void executeRoundRobin() {
@@ -344,7 +390,15 @@ public class RoundRobinPanel extends JPanel {
             processes.add(new ProcessData(id, at, bt, i));
         }
 
-        processes.sort(Comparator.comparingInt(p -> p.at));
+        processes.sort((p1, p2) -> {
+            if (p1.at != p2.at) {
+                return Integer.compare(p1.at, p2.at);
+            } else {
+                int id1 = Integer.parseInt(p1.id.replace("P", ""));
+                int id2 = Integer.parseInt(p2.id.replace("P", ""));
+                return Integer.compare(id1, id2);
+            }
+        });
 
         List<GanttSegment> segments = new ArrayList<>();
         Queue<ProcessData> queue = new LinkedList<>();
@@ -410,15 +464,28 @@ public class RoundRobinPanel extends JPanel {
         double cpuUtil = ((totalTime - totalIdleTime) / totalTime) * 100.0;
         double throughput = (double) n / totalTime;
 
+        double sumCt = 0, sumTat = 0, sumWt = 0;
+
         for (ProcessData p : processes) {
             tableModel.setValueAt(p.ct, p.rowIndex, 3);
             tableModel.setValueAt(p.tat, p.rowIndex, 4);
             tableModel.setValueAt(p.wt, p.rowIndex, 5);
             tableModel.setValueAt(p.rt, p.rowIndex, 6);
+            
+            sumCt += p.ct;
+            sumTat += p.tat;
+            sumWt += p.wt;
         }
 
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
         throughputLabel.setText(String.format("Throughput: %.4f", throughput));
+        
+        totalCtLabel.setText(String.format("Total Completion Time: %.2f", sumCt));
+        totalTatLabel.setText(String.format("Total Turn Around Time: %.2f", sumTat));
+        totalWtLabel.setText(String.format("Total Waiting Time: %.2f", sumWt));
+        
+        avgTatLabel.setText(String.format("Average Turn Around Time: %.2f", (sumTat / n)));
+        avgWtLabel.setText(String.format("Average Waiting Time: %.2f", (sumWt / n)));
         
         ganttChartPanel.setSegments(segments);
     }
