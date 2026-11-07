@@ -610,7 +610,7 @@ public class RoundRobinPanel extends JPanel {
         }
 
         cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
-        throughputLabel.setText(String.format("Throughput: %.2f processes per ms", throughput));
+        throughputLabel.setText(String.format("Throughput: %.4f processes per ms", throughput));
         
         DecimalFormat df = new DecimalFormat("0.##");
         
