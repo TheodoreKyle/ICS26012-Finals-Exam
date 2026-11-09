@@ -43,6 +43,17 @@ public class RoundRobinPanel extends JPanel {
     private DefaultTableModel tableModel;
     private GanttChartPanel ganttChartPanel; 
 
+    private static final Font FONT_BOLD_24 = new Font("Arial", Font.BOLD, 24);
+    private static final Font FONT_BOLD_20 = new Font("Arial", Font.BOLD, 20);
+    private static final Font FONT_BOLD_16 = new Font("Arial", Font.BOLD, 16);
+    private static final Font FONT_BOLD_14 = new Font("Arial", Font.BOLD, 14);
+    private static final Font FONT_PLAIN_20 = new Font("Arial", Font.PLAIN, 20);
+    private static final Font FONT_PLAIN_14 = new Font("Arial", Font.PLAIN, 14);
+
+    private static final Dimension DIM_BTN_LARGE = new Dimension(220, 60);
+    private static final Dimension DIM_BTN_SMALL = new Dimension(100, 40);
+    private static final Dimension DIM_INPUT = new Dimension(120, 35);
+
     public RoundRobinPanel(Runnable onBack) {
         setLayout(new BorderLayout());
 
@@ -67,8 +78,8 @@ public class RoundRobinPanel extends JPanel {
     private JPanel createTopPanel(Runnable onBack) {
         JButton backButton = new JButton("Back");
         backButton.setFocusPainted(false);
-        backButton.setPreferredSize(new Dimension(100, 40));
-        backButton.setFont(new Font("Arial", Font.BOLD, 24));
+        backButton.setPreferredSize(DIM_BTN_SMALL);
+        backButton.setFont(FONT_BOLD_24);
         backButton.setForeground(Color.BLACK);
         backButton.setBackground(new Color(160, 200, 255));
         backButton.setContentAreaFilled(false);
@@ -141,7 +152,7 @@ public class RoundRobinPanel extends JPanel {
 
     private JLabel createErrorLabel() {
         JLabel label = new JLabel("");
-        label.setFont(new Font("Arial", Font.BOLD, 16));
+        label.setFont(FONT_BOLD_16);
         label.setForeground(Color.RED);
         return label;
     }
@@ -173,7 +184,7 @@ public class RoundRobinPanel extends JPanel {
 
     private JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.BOLD, 20));
+        label.setFont(FONT_BOLD_20);
         return label;
     }
 
@@ -199,8 +210,8 @@ public class RoundRobinPanel extends JPanel {
 
     private JTextField createTextField() {
         JTextField textField = new JTextField();
-        textField.setPreferredSize(new Dimension(120, 35));
-        textField.setFont(new Font("Arial", Font.PLAIN, 20));
+        textField.setPreferredSize(DIM_INPUT);
+        textField.setFont(FONT_PLAIN_20);
 
         ((AbstractDocument) textField.getDocument()).setDocumentFilter(new IntegerOnlyFilter()); 
 
@@ -226,7 +237,7 @@ public class RoundRobinPanel extends JPanel {
         };
 
         resultTable = new JTable(tableModel);
-        resultTable.setFont(new Font("Arial", Font.PLAIN, 14));
+        resultTable.setFont(FONT_PLAIN_14);
         resultTable.setRowHeight(30);
         resultTable.setShowGrid(true);
         resultTable.setGridColor(Color.GRAY);
@@ -248,7 +259,6 @@ public class RoundRobinPanel extends JPanel {
                 int row = resultTable.getSelectedRow();
                 int col = resultTable.getSelectedColumn();
                 
-                // Prevent out-of-bounds error if no cell is selected
                 if (row == -1 || col == -1) return;
                 
                 if (resultTable.isEditing()) {
@@ -259,7 +269,7 @@ public class RoundRobinPanel extends JPanel {
                     resultTable.changeSelection(row + 1, col, false, false);
                     if (resultTable.isCellEditable(row + 1, col)) {
                         resultTable.editCellAt(row + 1, col);
-                        // Null check prevents the NullPointerException
+
                         Component editor = resultTable.getEditorComponent();
                         if (editor != null) {
                             editor.requestFocusInWindow();
@@ -296,7 +306,7 @@ public class RoundRobinPanel extends JPanel {
         });
 
         JTableHeader tableHeader = resultTable.getTableHeader();
-        tableHeader.setFont(new Font("Arial", Font.BOLD, 14));
+        tableHeader.setFont(FONT_BOLD_14);
         tableHeader.setPreferredSize(new Dimension(0, 40));
         tableHeader.setReorderingAllowed(false);
 
@@ -412,7 +422,7 @@ public class RoundRobinPanel extends JPanel {
 
     private JLabel createStatLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.BOLD, 16));
+        label.setFont(FONT_BOLD_16);
         label.setForeground(Color.BLACK);
         return label;
     }
@@ -667,8 +677,8 @@ public class RoundRobinPanel extends JPanel {
     private JButton createGenerateRandomButton() {
         JButton button = new JButton("<html><center>Generate Random<br>Inputs</center></html>");
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(220, 60));
-        button.setFont(new Font("Arial", Font.BOLD, 20));
+        button.setPreferredSize(DIM_BTN_LARGE);
+        button.setFont(FONT_BOLD_20);
         button.setForeground(Color.WHITE);
         button.setBackground(new Color(0, 0, 128));
         button.setContentAreaFilled(false);
@@ -692,8 +702,8 @@ public class RoundRobinPanel extends JPanel {
     private JButton createClearAllButton() {
         JButton button = new JButton("Clear All");
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(220, 60));
-        button.setFont(new Font("Arial", Font.BOLD, 24));
+        button.setPreferredSize(DIM_BTN_LARGE);
+        button.setFont(FONT_BOLD_24);
         button.setForeground(Color.WHITE);
         button.setBackground(new Color(180, 0, 0)); 
         button.setContentAreaFilled(false);
@@ -717,8 +727,8 @@ public class RoundRobinPanel extends JPanel {
     private JButton createCalculateButton() {
         JButton button = new JButton("Calculate");
         button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(220, 60));
-        button.setFont(new Font("Arial", Font.BOLD, 24));
+        button.setPreferredSize(DIM_BTN_LARGE);
+        button.setFont(FONT_BOLD_24);
         button.setForeground(Color.WHITE);
         button.setBackground(new Color(0, 100, 0));
         button.setContentAreaFilled(false);
@@ -741,7 +751,7 @@ public class RoundRobinPanel extends JPanel {
 
     private DefaultCellEditor createCellEditor(DocumentFilter filter) {
         JTextField cellField = new JTextField();
-        cellField.setFont(new Font("Arial", Font.PLAIN, 14));
+        cellField.setFont(FONT_PLAIN_14);
         cellField.setHorizontalAlignment(SwingConstants.CENTER);
         cellField.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
