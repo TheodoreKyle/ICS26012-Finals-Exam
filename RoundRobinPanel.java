@@ -609,10 +609,12 @@ public class RoundRobinPanel extends JPanel {
             sumWt += p.wt;
         }
 
-        cpuUtilLabel.setText(String.format("CPU Utilization: %.2f%%", cpuUtil));
-        throughputLabel.setText(String.format("Throughput: %.4f processes per ms", throughput));
-        
         DecimalFormat df = new DecimalFormat("0.##");
+        DecimalFormat dfThroughput = new DecimalFormat("0.####");
+
+        cpuUtilLabel.setText("CPU Utilization: " + df.format(cpuUtil) + "%");
+        throughputLabel.setText("Throughput: " + dfThroughput.format(throughput) + " processes per ms");
+
         
         totalCtLabel.setText("Total Completion Time: " + df.format(sumCt) + "ms");
         totalTatLabel.setText("Total Turn Around Time: " + df.format(sumTat) + "ms");
