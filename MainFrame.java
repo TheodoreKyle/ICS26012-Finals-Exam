@@ -20,6 +20,7 @@ public class MainFrame extends JFrame {
     private void initializeFrame() {
         setTitle("Round Robin");
         setSize(1450, 700);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());  
