@@ -5,12 +5,19 @@ public class MainFrame extends JFrame {
 
     private static final String MENU_CARD = "menu";
     private static final String ABOUT_CARD = "about";
+    private static final String MULTILEVEL_QUEUE_CARD = "multilevelQueue";
     private static final String ROUND_ROBIN_CARD = "roundRobin";
 
+    private JButton multilevelQueueButton;
     private JButton roundRobinButton;
     private JButton aboutButton;
+
     private CardLayout cardLayout;
     private JPanel cardPanel;
+
+    private AboutPanel aboutPanel;
+    private MultilevelQueuePanel multilevelQueuePanel;
+    private RoundRobinPanel roundRobinPanel;
 
     public MainFrame() {
         initializeFrame();
@@ -27,6 +34,24 @@ public class MainFrame extends JFrame {
     }
 
     private void initializeComponents() {
+        multilevelQueueButton = new JButton("Multilevel Queue");
+        multilevelQueueButton.setFocusPainted(false);
+        multilevelQueueButton.setPreferredSize(new Dimension(240, 100));
+        multilevelQueueButton.setFont(new Font("Arial", Font.BOLD, 24));
+        multilevelQueueButton.setForeground(Color.BLACK);
+        multilevelQueueButton.setBackground(new Color(255, 160, 160));
+        multilevelQueueButton.setContentAreaFilled(false);
+        multilevelQueueButton.setOpaque(true);
+        multilevelQueueButton.setBorderPainted(false);
+
+        multilevelQueueButton.getModel().addChangeListener(e -> {
+            if (multilevelQueueButton.getModel().isPressed()) {
+                multilevelQueueButton.setBackground(new Color(220, 120, 120));
+            } else {
+                multilevelQueueButton.setBackground(new Color(255, 160, 160));
+            }
+        });
+
         roundRobinButton = new JButton("Round Robin");
         roundRobinButton.setFocusPainted(false);
 
@@ -68,26 +93,52 @@ public class MainFrame extends JFrame {
             }
         });
 
-        aboutButton.addActionListener(e -> cardLayout.show(cardPanel, ABOUT_CARD));
-        roundRobinButton.addActionListener(e -> cardLayout.show(cardPanel, ROUND_ROBIN_CARD));
+        aboutButton.addActionListener(e -> {
+            if (aboutPanel == null) {
+                aboutPanel = new AboutPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(aboutPanel, ABOUT_CARD);
+            }
+            cardLayout.show(cardPanel, ABOUT_CARD);
+        });
+
+        multilevelQueueButton.addActionListener(e -> {
+            if (multilevelQueuePanel == null) {
+                multilevelQueuePanel = new MultilevelQueuePanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(multilevelQueuePanel, MULTILEVEL_QUEUE_CARD);
+            }
+            cardLayout.show(cardPanel, MULTILEVEL_QUEUE_CARD);
+        });
+
+        roundRobinButton.addActionListener(e -> {
+            if (roundRobinPanel == null) {
+                roundRobinPanel = new RoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(roundRobinPanel, ROUND_ROBIN_CARD);
+            }
+            cardLayout.show(cardPanel, ROUND_ROBIN_CARD);
+        });
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
+        
         gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new  Insets(0, 0, 20, 20); 
+        centerPanel.add(multilevelQueueButton, gbc); 
 
+        gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 20, 0); 
         centerPanel.add(roundRobinButton, gbc);
 
+        gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.gridwidth = 2;
         gbc.insets = new Insets(0, 0, 0, 0);
         centerPanel.add(aboutButton, gbc);
 
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.add(centerPanel, MENU_CARD);
-        cardPanel.add(new AboutPanel(() -> cardLayout.show(cardPanel, MENU_CARD)), ABOUT_CARD);
-        cardPanel.add(new RoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD)), ROUND_ROBIN_CARD);
 
         add(cardPanel, BorderLayout.CENTER);
     }
