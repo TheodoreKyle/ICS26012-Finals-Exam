@@ -8,9 +8,14 @@ public class MainFrame extends JFrame {
     private static final String MULTILEVEL_QUEUE_CARD = "multilevelQueue";
     private static final String ROUND_ROBIN_CARD = "roundRobin";
 
+    private static final String SAMPLE_ROUND_ROBIN_CARD = "sampleRoundRobin";
+
     private JButton multilevelQueueButton;
     private JButton roundRobinButton;
     private JButton aboutButton;
+
+    private JButton sampleMultilevelQueueButton;
+    private JButton sampleRoundRobinButton; 
 
     private CardLayout cardLayout;
     private JPanel cardPanel;
@@ -18,6 +23,8 @@ public class MainFrame extends JFrame {
     private AboutPanel aboutPanel;
     private MultilevelQueuePanel multilevelQueuePanel;
     private RoundRobinPanel roundRobinPanel;
+    private SampleRoundRobinPanel sampleRoundRobinPanel;
+
 
     public MainFrame() {
         initializeFrame();
@@ -82,6 +89,42 @@ public class MainFrame extends JFrame {
         aboutButton.setOpaque(true);
         aboutButton.setBorderPainted(false);
 
+        sampleMultilevelQueueButton = new JButton("<html><center>Sample<br>Multilevel Queue</center></html>");
+        sampleMultilevelQueueButton.setFocusPainted(false);
+        sampleMultilevelQueueButton.setPreferredSize(new Dimension(240, 100));
+        sampleMultilevelQueueButton.setFont(new Font("Arial", Font.BOLD, 24));
+        sampleMultilevelQueueButton.setForeground(Color.BLACK);
+        sampleMultilevelQueueButton.setBackground(new Color(247, 245, 97));
+        sampleMultilevelQueueButton.setContentAreaFilled(false);
+        sampleMultilevelQueueButton.setOpaque(true);
+        sampleMultilevelQueueButton.setBorderPainted(false);
+
+        sampleMultilevelQueueButton.getModel().addChangeListener(e -> {
+            if (sampleMultilevelQueueButton.getModel().isPressed()) {
+                sampleMultilevelQueueButton.setBackground(new Color(210, 210, 80)); 
+            } else {
+                sampleMultilevelQueueButton.setBackground(new Color(247, 245, 97));
+            }
+        });
+
+        sampleRoundRobinButton = new JButton("<html><center>Sample<br>Round Robin</center></html>");
+        sampleRoundRobinButton.setFocusPainted(false);
+        sampleRoundRobinButton.setPreferredSize(new Dimension(240, 100));
+        sampleRoundRobinButton.setFont(new Font("Arial", Font.BOLD, 24));
+        sampleRoundRobinButton.setForeground(Color.BLACK);
+        sampleRoundRobinButton.setBackground(new Color(247, 245, 97));
+        sampleRoundRobinButton.setContentAreaFilled(false);
+        sampleRoundRobinButton.setOpaque(true);
+        sampleRoundRobinButton.setBorderPainted(false);
+
+        sampleRoundRobinButton.getModel().addChangeListener(e -> {
+            if (sampleRoundRobinButton.getModel().isPressed()) {
+                sampleRoundRobinButton.setBackground(new Color(210, 210, 80)); 
+            } else {
+                sampleRoundRobinButton.setBackground(new Color(247, 245, 97));
+            }
+        });
+
         Color aboutNormalColor = new Color(160, 200, 255);
         Color aboutPressedColor = new Color(120, 160, 220);
 
@@ -117,12 +160,20 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, ROUND_ROBIN_CARD);
         });
 
+        sampleRoundRobinButton.addActionListener(e -> {
+            if (sampleRoundRobinPanel == null) {
+                sampleRoundRobinPanel = new SampleRoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(sampleRoundRobinPanel, SAMPLE_ROUND_ROBIN_CARD);
+            }
+            cardLayout.show(cardPanel, SAMPLE_ROUND_ROBIN_CARD);
+        });
+
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new  Insets(0, 0, 20, 20); 
+        gbc.insets = new Insets(0, 0, 20, 20);
         centerPanel.add(multilevelQueueButton, gbc); 
 
         gbc.gridx = 1;
@@ -132,7 +183,17 @@ public class MainFrame extends JFrame {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 20, 20); 
+        centerPanel.add(sampleMultilevelQueueButton, gbc); 
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 0); 
+        centerPanel.add(sampleRoundRobinButton, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2; 
         gbc.insets = new Insets(0, 0, 0, 0);
         centerPanel.add(aboutButton, gbc);
 
