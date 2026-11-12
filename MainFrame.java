@@ -9,6 +9,7 @@ public class MainFrame extends JFrame {
     private static final String ROUND_ROBIN_CARD = "roundRobin";
 
     private static final String SAMPLE_ROUND_ROBIN_CARD = "sampleRoundRobin";
+    private static final String SAMPLE_MULTILEVEL_QUEUE_CARD = "sampleMultilevelQueue";
 
     private JButton multilevelQueueButton;
     private JButton roundRobinButton;
@@ -24,6 +25,7 @@ public class MainFrame extends JFrame {
     private MultilevelQueuePanel multilevelQueuePanel;
     private RoundRobinPanel roundRobinPanel;
     private SampleRoundRobinPanel sampleRoundRobinPanel;
+    private SampleMultilevelQueuePanel sampleMultilevelQueuePanel;
 
 
     public MainFrame() {
@@ -166,6 +168,14 @@ public class MainFrame extends JFrame {
                 cardPanel.add(sampleRoundRobinPanel, SAMPLE_ROUND_ROBIN_CARD);
             }
             cardLayout.show(cardPanel, SAMPLE_ROUND_ROBIN_CARD);
+        });
+
+        sampleMultilevelQueueButton.addActionListener(e -> {
+            if (sampleMultilevelQueuePanel == null) {
+                sampleMultilevelQueuePanel = new SampleMultilevelQueuePanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(sampleMultilevelQueuePanel, SAMPLE_MULTILEVEL_QUEUE_CARD);
+            }
+            cardLayout.show(cardPanel, SAMPLE_MULTILEVEL_QUEUE_CARD);
         });
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
