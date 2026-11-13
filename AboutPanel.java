@@ -44,15 +44,15 @@ public class AboutPanel extends JPanel {
 
         textPanel.add(createLabel("ICS26012 Finals Examination - 3ITB", Font.BOLD, 26));
         textPanel.add(Box.createVerticalStrut(30));
-        textPanel.add(createLabel("Presented by:", Font.BOLD, 22));
+        textPanel.add(createLabel("Presented by Deadlockers:", Font.BOLD, 22));
         textPanel.add(Box.createVerticalStrut(15));
-        textPanel.add(createLabel("\u2022 Choa, Theodore Kyle", Font.PLAIN, 20));
+        textPanel.add(createLabel("\u2022 (Leader) Lagman, John Raphael - Multilevel Queue", Font.PLAIN, 20));
         textPanel.add(Box.createVerticalStrut(10));
-        textPanel.add(createLabel("\u2022 Garcia, Mark Russel", Font.PLAIN, 20));
+        textPanel.add(createLabel("\u2022 Choa, Theodore Kyle - Round Robin", Font.PLAIN, 20));
         textPanel.add(Box.createVerticalStrut(10));
-        textPanel.add(createLabel("\u2022 Lagman, John Raphael", Font.PLAIN, 20));
+        textPanel.add(createLabel("\u2022 Garcia, Mark Russel - Shortest Seek Time First", Font.PLAIN, 20));
         textPanel.add(Box.createVerticalStrut(10));
-        textPanel.add(createLabel("\u2022 Vega, Wyn Icezel", Font.PLAIN, 20));
+        textPanel.add(createLabel("\u2022 Vega, Wyn Icezel - First Come First Serve", Font.PLAIN, 20));
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.add(textPanel);
