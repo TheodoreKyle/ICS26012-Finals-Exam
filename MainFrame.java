@@ -13,10 +13,14 @@ public class MainFrame extends JFrame {
 
     private JButton multilevelQueueButton;
     private JButton roundRobinButton;
+    private JButton sstfButton;
+    private JButton fcfsButton;
     private JButton aboutButton;
 
     private JButton sampleMultilevelQueueButton;
-    private JButton sampleRoundRobinButton; 
+    private JButton sampleRoundRobinButton;
+    private JButton sampleSstfButton;
+    private JButton sampleFcfsButton; 
 
     private CardLayout cardLayout;
     private JPanel cardPanel;
@@ -77,6 +81,78 @@ public class MainFrame extends JFrame {
                 roundRobinButton.setBackground(new Color(220, 120, 120));
             } else {
                 roundRobinButton.setBackground(new Color(255, 160, 160));
+            }
+        });
+
+        sstfButton = new JButton("<html><center>Shortest Seek<br>Time First</center></html>");
+        sstfButton.setFocusPainted(false);
+        sstfButton.setPreferredSize(new Dimension(240, 100));
+        sstfButton.setFont(new Font("Arial", Font.BOLD, 24));
+        sstfButton.setForeground(Color.BLACK);
+        sstfButton.setBackground(new Color(255, 160, 160));
+        sstfButton.setContentAreaFilled(false);
+        sstfButton.setOpaque(true);
+        sstfButton.setBorderPainted(false);
+
+        sstfButton.getModel().addChangeListener(e -> {
+            if (sstfButton.getModel().isPressed()) {
+                sstfButton.setBackground(new Color(220, 120, 120));
+            } else {
+                sstfButton.setBackground(new Color(255, 160, 160));
+            }
+        });
+
+        fcfsButton = new JButton("<html><center>First Come<br>First Serve</center></html>");
+        fcfsButton.setFocusPainted(false);
+        fcfsButton.setPreferredSize(new Dimension(240, 100));
+        fcfsButton.setFont(new Font("Arial", Font.BOLD, 24));
+        fcfsButton.setForeground(Color.BLACK);
+        fcfsButton.setBackground(new Color(255, 160, 160));
+        fcfsButton.setContentAreaFilled(false);
+        fcfsButton.setOpaque(true);
+        fcfsButton.setBorderPainted(false);
+
+        fcfsButton.getModel().addChangeListener(e -> {
+            if (fcfsButton.getModel().isPressed()) {
+                fcfsButton.setBackground(new Color(220, 120, 120));
+            } else {
+                fcfsButton.setBackground(new Color(255, 160, 160));
+            }
+        });
+
+        sampleSstfButton = new JButton("<html><center>Sample<br>Shortest Seek<br>Time First</center></html>");
+        sampleSstfButton.setFocusPainted(false);
+        sampleSstfButton.setPreferredSize(new Dimension(240, 100));
+        sampleSstfButton.setFont(new Font("Arial", Font.BOLD, 20));
+        sampleSstfButton.setForeground(Color.BLACK);
+        sampleSstfButton.setBackground(new Color(247, 245, 97));
+        sampleSstfButton.setContentAreaFilled(false);
+        sampleSstfButton.setOpaque(true);
+        sampleSstfButton.setBorderPainted(false);
+
+        sampleSstfButton.getModel().addChangeListener(e -> {
+            if (sampleSstfButton.getModel().isPressed()) {
+                sampleSstfButton.setBackground(new Color(210, 210, 80)); 
+            } else {
+                sampleSstfButton.setBackground(new Color(247, 245, 97));
+            }
+        });
+
+        sampleFcfsButton = new JButton("<html><center>Sample<br>First Come<br>First Serve</center></html>");
+        sampleFcfsButton.setFocusPainted(false);
+        sampleFcfsButton.setPreferredSize(new Dimension(240, 100));
+        sampleFcfsButton.setFont(new Font("Arial", Font.BOLD, 20));
+        sampleFcfsButton.setForeground(Color.BLACK);
+        sampleFcfsButton.setBackground(new Color(247, 245, 97));
+        sampleFcfsButton.setContentAreaFilled(false);
+        sampleFcfsButton.setOpaque(true);
+        sampleFcfsButton.setBorderPainted(false);
+
+        sampleFcfsButton.getModel().addChangeListener(e -> {
+            if (sampleFcfsButton.getModel().isPressed()) {
+                sampleFcfsButton.setBackground(new Color(210, 210, 80)); 
+            } else {
+                sampleFcfsButton.setBackground(new Color(247, 245, 97));
             }
         });
 
@@ -188,8 +264,18 @@ public class MainFrame extends JFrame {
 
         gbc.gridx = 1;
         gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 20, 0); 
+        gbc.insets = new Insets(0, 0, 20, 20); 
         centerPanel.add(roundRobinButton, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 20, 20); 
+        centerPanel.add(sstfButton, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 0, 20, 0); 
+        centerPanel.add(fcfsButton, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
@@ -198,12 +284,22 @@ public class MainFrame extends JFrame {
 
         gbc.gridx = 1;
         gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 20, 0); 
+        gbc.insets = new Insets(0, 0, 20, 20); 
         centerPanel.add(sampleRoundRobinButton, gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 20); 
+        centerPanel.add(sampleSstfButton, gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 0); 
+        centerPanel.add(sampleFcfsButton, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
-        gbc.gridwidth = 2; 
+        gbc.gridwidth = 4; 
         gbc.insets = new Insets(0, 0, 0, 0);
         centerPanel.add(aboutButton, gbc);
 
