@@ -8,6 +8,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.List;
 import java.util.Random;
+import java.math.RoundingMode;
 import javax.swing.text.AbstractDocument;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -620,7 +621,10 @@ public class RoundRobinPanel extends JPanel {
         }
 
         DecimalFormat df = new DecimalFormat("0.##");
+        df.setRoundingMode(RoundingMode.HALF_UP);
+
         DecimalFormat dfThroughput = new DecimalFormat("0.####");
+        dfThroughput.setRoundingMode(RoundingMode.HALF_UP);
 
         cpuUtilLabel.setText("CPU Utilization: " + df.format(cpuUtil) + "%");
         throughputLabel.setText("Throughput: " + dfThroughput.format(throughput) + " processes per ms");

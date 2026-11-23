@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.math.RoundingMode;
 import javax.swing.text.AbstractDocument;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -728,7 +729,6 @@ private void executeMultilevelQueue() {
         double cpuUtil = ((totalTime - totalIdleTime) / totalTime) * 100.0;
         double throughput = (double) n / totalTime;
 
-        // Variables for calculating Totals and Averages
         double sumCt = 0, sumTat = 0, sumWt = 0;
 
         for (ProcessData p : processes) {
@@ -742,7 +742,10 @@ private void executeMultilevelQueue() {
         }
 
         DecimalFormat df = new DecimalFormat("0.##");
+        df.setRoundingMode(RoundingMode.HALF_UP);
+
         DecimalFormat dfThroughput = new DecimalFormat("0.####");
+        dfThroughput.setRoundingMode(RoundingMode.HALF_UP);
 
         cpuUtilLabel.setText("CPU Utilization: " + df.format(cpuUtil) + "%");
         throughputLabel.setText("Throughput: " + dfThroughput.format(throughput) + " processes per ms");
