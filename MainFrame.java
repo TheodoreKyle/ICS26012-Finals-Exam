@@ -38,7 +38,7 @@ public class MainFrame extends JFrame {
     }
 
     private void initializeFrame() {
-        setTitle("Round Robin");
+        setTitle("3ITB - Deadlockers");
         setSize(1450, 700);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
