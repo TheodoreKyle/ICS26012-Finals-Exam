@@ -8,8 +8,12 @@ public class MainFrame extends JFrame {
     private static final String MULTILEVEL_QUEUE_CARD = "multilevelQueue";
     private static final String ROUND_ROBIN_CARD = "roundRobin";
 
+    private static final String FCFS_CARD = "fcfs";
+
     private static final String SAMPLE_ROUND_ROBIN_CARD = "sampleRoundRobin";
     private static final String SAMPLE_MULTILEVEL_QUEUE_CARD = "sampleMultilevelQueue";
+
+    private static final String SAMPLE_FCFS_CARD = "sampleFcfs"; 
 
     private JButton multilevelQueueButton;
     private JButton roundRobinButton;
@@ -31,6 +35,8 @@ public class MainFrame extends JFrame {
     private SampleRoundRobinPanel sampleRoundRobinPanel;
     private SampleMultilevelQueuePanel sampleMultilevelQueuePanel;
 
+    private FCFSDiskPanel fcfsPanel;
+    private SampleFcfsPanel sampleFcfsPanel; 
 
     public MainFrame() {
         initializeFrame();
@@ -238,6 +244,14 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, ROUND_ROBIN_CARD);
         });
 
+        fcfsButton.addActionListener(e -> {
+            if (fcfsPanel == null) {
+                fcfsPanel = new FCFSDiskPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(fcfsPanel, FCFS_CARD);
+            }
+            cardLayout.show(cardPanel, FCFS_CARD);
+        });
+
         sampleRoundRobinButton.addActionListener(e -> {
             if (sampleRoundRobinPanel == null) {
                 sampleRoundRobinPanel = new SampleRoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
@@ -252,6 +266,16 @@ public class MainFrame extends JFrame {
                 cardPanel.add(sampleMultilevelQueuePanel, SAMPLE_MULTILEVEL_QUEUE_CARD);
             }
             cardLayout.show(cardPanel, SAMPLE_MULTILEVEL_QUEUE_CARD);
+        });
+
+        //Put here SSTF
+
+        sampleFcfsButton.addActionListener(e -> {
+            if (sampleFcfsPanel == null) {
+                sampleFcfsPanel = new SampleFcfsPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(sampleFcfsPanel, SAMPLE_FCFS_CARD);
+            }
+            cardLayout.show(cardPanel, SAMPLE_FCFS_CARD);
         });
 
         JPanel centerPanel = new JPanel(new GridBagLayout());
