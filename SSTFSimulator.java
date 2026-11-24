@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
@@ -405,8 +407,8 @@ public class SSTFSimulator extends JFrame {
     }
 
     /**
-     * Disk Head Movement Graph Panel with guaranteed top-axis label spacing
-     * and boxed directional node labels.
+     * Disk Head Movement Graph Panel where every top-axis label, dashed guide line,
+     * and plotted node shares the exact same aligned X coordinate.
      */
     private static class SeekGraphPanel extends JPanel {
         private List<Integer> seekSequence = new ArrayList<>();
@@ -434,22 +436,37 @@ public class SSTFSimulator extends JFrame {
         }
 
         /**
-         * Computes exact non-overlapping X centers for sorted labels while keeping them
-         * as close as possible to their true axis positions.
+         * Computes non-overlapping X positions pinned between leftAnchor and rightAnchor
+         * while preserving relative proximity to true proportional cylinder positions.
          */
-        private int[] computeNonOverlappingCenters(int[] trueX, int[] widths, int minGap, int minBound, int maxBound) {
+        private int[] computeAlignedAxisX(int[] trueX, int[] widths, int minGap, int leftAnchor, int rightAnchor) {
             int n = trueX.length;
-            int[] centers = new int[n];
-            if (n == 0) return centers;
+            int[] x = new int[n];
+            if (n == 0) return x;
             if (n == 1) {
-                centers[0] = Math.max(minBound + widths[0] / 2, Math.min(maxBound - widths[0] / 2, trueX[0]));
-                return centers;
+                x[0] = leftAnchor;
+                return x;
+            }
+
+            double[] reqDist = new double[n - 1];
+            double totalReq = 0;
+            for (int i = 0; i < n - 1; i++) {
+                reqDist[i] = (widths[i] + widths[i + 1]) / 2.0 + minGap;
+                totalReq += reqDist[i];
+            }
+
+            double availableSpan = rightAnchor - leftAnchor;
+            if (totalReq > availableSpan && totalReq > 0) {
+                double scale = availableSpan / totalReq;
+                for (int i = 0; i < n - 1; i++) {
+                    reqDist[i] *= scale;
+                }
             }
 
             double[] d = new double[n];
             d[0] = 0.0;
             for (int i = 1; i < n; i++) {
-                d[i] = d[i - 1] + (widths[i - 1] + widths[i]) / 2.0 + minGap;
+                d[i] = d[i - 1] + reqDist[i - 1];
             }
 
             double[] blockVal = new double[n];
@@ -474,37 +491,34 @@ public class SSTFSimulator extends JFrame {
                 }
             }
 
+            double[] pos = new double[n];
             for (int b = 0; b < numBlocks; b++) {
                 int start = blockStart[b];
                 int end = (b + 1 < numBlocks) ? blockStart[b + 1] : n;
                 for (int i = start; i < end; i++) {
-                    centers[i] = (int) Math.round(blockVal[b] + d[i]);
+                    pos[i] = blockVal[b] + d[i];
                 }
             }
 
-            int leftLimit = minBound + widths[0] / 2;
-            if (centers[0] < leftLimit) {
-                centers[0] = leftLimit;
-            }
+            // Pin boundary markers (0 and maxCylinder) to exact ends of the axis line
+            pos[0] = leftAnchor;
             for (int i = 1; i < n; i++) {
-                int minAllowed = centers[i - 1] + (widths[i - 1] + widths[i]) / 2 + minGap;
-                if (centers[i] < minAllowed) {
-                    centers[i] = minAllowed;
+                if (pos[i] < pos[i - 1] + reqDist[i - 1]) {
+                    pos[i] = pos[i - 1] + reqDist[i - 1];
                 }
             }
 
-            int rightLimit = maxBound - widths[n - 1] / 2;
-            if (centers[n - 1] > rightLimit) {
-                centers[n - 1] = rightLimit;
-            }
+            pos[n - 1] = rightAnchor;
             for (int i = n - 2; i >= 0; i--) {
-                int maxAllowed = centers[i + 1] - (widths[i] + widths[i + 1]) / 2 - minGap;
-                if (centers[i] > maxAllowed) {
-                    centers[i] = Math.max(leftLimit, maxAllowed);
+                if (pos[i] > pos[i + 1] - reqDist[i]) {
+                    pos[i] = Math.max(leftAnchor, pos[i + 1] - reqDist[i]);
                 }
             }
 
-            return centers;
+            for (int i = 0; i < n; i++) {
+                x[i] = (int) Math.round(pos[i]);
+            }
+            return x;
         }
 
         @Override
@@ -540,18 +554,20 @@ public class SSTFSimulator extends JFrame {
                 totalLabelWidth += widths[i];
             }
 
-            int minGap = 14;
-            int totalNeededWidth = totalLabelWidth + Math.max(0, n - 1) * minGap;
-            boolean useTwoTiers = totalNeededWidth > (getWidth() - 24);
-
             int padLeft = 45;
             int padRight = 70;
+            int plotW = getWidth() - padLeft - padRight;
+            if (plotW <= 20) {
+                g2.dispose();
+                return;
+            }
+
+            int minGap = 10;
+            boolean useTwoTiers = (totalLabelWidth + Math.max(0, n - 1) * minGap) > plotW;
             int padTop = useTwoTiers ? 50 : 38;
             int padBottom = 30;
-
-            int plotW = getWidth() - padLeft - padRight;
             int plotH = getHeight() - padTop - padBottom;
-            if (plotW <= 0 || plotH <= 0) {
+            if (plotH <= 20) {
                 g2.dispose();
                 return;
             }
@@ -567,73 +583,41 @@ public class SSTFSimulator extends JFrame {
                 trueX[i] = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
             }
 
-            int[] labelCenterX = new int[n];
-            int[] labelRow = new int[n];
+            int effectiveGap = useTwoTiers ? 2 : minGap;
+            int[] alignedX = computeAlignedAxisX(trueX, widths, effectiveGap, padLeft, padLeft + plotW);
 
-            if (!useTwoTiers) {
-                labelCenterX = computeNonOverlappingCenters(trueX, widths, minGap, 12, getWidth() - 12);
-            } else {
-                int evenCount = (n + 1) / 2;
-                int oddCount = n / 2;
-
-                int[] evenTrueX = new int[evenCount];
-                int[] evenWidths = new int[evenCount];
-                int[] oddTrueX = new int[oddCount];
-                int[] oddWidths = new int[oddCount];
-
-                for (int i = 0; i < n; i++) {
-                    if (i % 2 == 0) {
-                        evenTrueX[i / 2] = trueX[i];
-                        evenWidths[i / 2] = widths[i];
-                    } else {
-                        oddTrueX[i / 2] = trueX[i];
-                        oddWidths[i / 2] = widths[i];
-                    }
-                }
-
-                int[] evenCenters = computeNonOverlappingCenters(evenTrueX, evenWidths, minGap, 12, getWidth() - 12);
-                int[] oddCenters = computeNonOverlappingCenters(oddTrueX, oddWidths, minGap, 12, getWidth() - 12);
-
-                for (int i = 0; i < n; i++) {
-                    if (i % 2 == 0) {
-                        labelCenterX[i] = evenCenters[i / 2];
-                        labelRow[i] = 0;
-                    } else {
-                        labelCenterX[i] = oddCenters[i / 2];
-                        labelRow[i] = 1;
-                    }
-                }
-            }
-
+            // Map each cylinder to its exact aligned X coordinate so labels, vertical lines, and dots match
+            Map<Integer, Integer> cylToX = new HashMap<>();
             Stroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4, 4}, 0);
 
             for (int i = 0; i < n; i++) {
                 int cyl = sortedMarkers.get(i);
-                int tx = trueX[i];
-                int lx = labelCenterX[i];
-                int labelY = (labelRow[i] == 0) ? (padTop - 8) : (padTop - 23);
+                int x = alignedX[i];
+                cylToX.put(cyl, x);
+
+                int labelY = (useTwoTiers && (i % 2 == 1)) ? (padTop - 23) : (padTop - 8);
 
                 if (uniqueSet.contains(cyl)) {
                     g2.setColor(new Color(215, 220, 230));
                     g2.setStroke(dashed);
-                    g2.drawLine(tx, padTop, tx, padTop + plotH);
+                    g2.drawLine(x, padTop, x, padTop + plotH);
                 }
 
                 String cylStr = String.valueOf(cyl);
                 boolean isBoundary = (cyl == 0 || cyl == maxCylinder) && !uniqueSet.contains(cyl);
                 g2.setColor(isBoundary ? new Color(110, 120, 135) : new Color(45, 55, 70));
-                g2.drawString(cylStr, lx - (widths[i] / 2), labelY);
+                g2.drawString(cylStr, x - (widths[i] / 2), labelY);
             }
 
             int steps = seq.size();
             double stepY = (steps > 1) ? (double) plotH / (steps - 1) : plotH;
 
-            int prevX = padLeft + (int) Math.round(((double) seq.get(0) / maxCylinder) * plotW);
+            int prevX = cylToX.get(seq.get(0));
             int prevY = padTop;
 
             for (int i = 1; i < steps; i++) {
                 int cyl = seq.get(i);
-                int currX = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
+                int currX = cylToX.get(cyl);
                 int currY = padTop + (int) Math.round(i * stepY);
 
                 g2.setColor(new Color(55, 95, 215));
@@ -646,7 +630,7 @@ public class SSTFSimulator extends JFrame {
 
             for (int i = 0; i < steps; i++) {
                 int cyl = seq.get(i);
-                int currX = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
+                int currX = cylToX.get(cyl);
                 int currY = padTop + (int) Math.round(i * stepY);
 
                 g2.setColor(i == 0 ? new Color(65, 165, 75) : new Color(55, 95, 215));
