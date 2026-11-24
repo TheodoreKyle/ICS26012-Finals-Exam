@@ -7,12 +7,12 @@ public class MainFrame extends JFrame {
     private static final String ABOUT_CARD = "about";
     private static final String MULTILEVEL_QUEUE_CARD = "multilevelQueue";
     private static final String ROUND_ROBIN_CARD = "roundRobin";
-
+    private static final String SSTF_CARD = "sstf";
     private static final String FCFS_CARD = "fcfs";
 
     private static final String SAMPLE_ROUND_ROBIN_CARD = "sampleRoundRobin";
     private static final String SAMPLE_MULTILEVEL_QUEUE_CARD = "sampleMultilevelQueue";
-
+    private static final String SAMPLE_SSTF_CARD = "sampleSstf";
     private static final String SAMPLE_FCFS_CARD = "sampleFcfs"; 
 
     private JButton multilevelQueueButton;
@@ -34,7 +34,8 @@ public class MainFrame extends JFrame {
     private RoundRobinPanel roundRobinPanel;
     private SampleRoundRobinPanel sampleRoundRobinPanel;
     private SampleMultilevelQueuePanel sampleMultilevelQueuePanel;
-
+    private SSTFSimulator sstfPanel;
+    private SampleSstfPanel sampleSstfPanel;
     private FCFSDiskPanel fcfsPanel;
     private SampleFcfsPanel sampleFcfsPanel; 
 
@@ -252,6 +253,14 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, FCFS_CARD);
         });
 
+        sstfButton.addActionListener(e -> {
+            if (sstfPanel == null) {
+                sstfPanel = new SSTFSimulator(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(sstfPanel, SSTF_CARD);
+            }
+            cardLayout.show(cardPanel, SSTF_CARD);
+        });
+
         sampleRoundRobinButton.addActionListener(e -> {
             if (sampleRoundRobinPanel == null) {
                 sampleRoundRobinPanel = new SampleRoundRobinPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
@@ -268,7 +277,13 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, SAMPLE_MULTILEVEL_QUEUE_CARD);
         });
 
-        //Put here SSTF
+        sampleSstfButton.addActionListener(e -> {
+            if (sampleSstfPanel == null) {
+                sampleSstfPanel = new SampleSstfPanel(() -> cardLayout.show(cardPanel, MENU_CARD));
+                cardPanel.add(sampleSstfPanel, SAMPLE_SSTF_CARD);
+            }
+            cardLayout.show(cardPanel, SAMPLE_SSTF_CARD);
+        });
 
         sampleFcfsButton.addActionListener(e -> {
             if (sampleFcfsPanel == null) {
@@ -278,52 +293,64 @@ public class MainFrame extends JFrame {
             cardLayout.show(cardPanel, SAMPLE_FCFS_CARD);
         });
 
+        JLabel titleLabel = new JLabel("Welcome to Deadlockers' CPU and Disk Scheduling Algorithms");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 34));
+        titleLabel.setForeground(Color.BLACK);
+
         JPanel centerPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        
+
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 4;
+        gbc.insets = new Insets(0, 0, 40, 0);
+        centerPanel.add(titleLabel, gbc);
+
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
         gbc.insets = new Insets(0, 0, 20, 20);
-        centerPanel.add(multilevelQueueButton, gbc); 
+        centerPanel.add(multilevelQueueButton, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 20, 20); 
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 20);
         centerPanel.add(roundRobinButton, gbc);
 
         gbc.gridx = 2;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 20, 20); 
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 20);
         centerPanel.add(sstfButton, gbc);
 
         gbc.gridx = 3;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(0, 0, 20, 0); 
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 20, 0);
         centerPanel.add(fcfsButton, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 20, 20); 
-        centerPanel.add(sampleMultilevelQueueButton, gbc); 
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 20, 20);
+        centerPanel.add(sampleMultilevelQueueButton, gbc);
 
         gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 20, 20); 
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 20, 20);
         centerPanel.add(sampleRoundRobinButton, gbc);
 
         gbc.gridx = 2;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 20, 20); 
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 20, 20);
         centerPanel.add(sampleSstfButton, gbc);
 
         gbc.gridx = 3;
-        gbc.gridy = 1;
-        gbc.insets = new Insets(0, 0, 20, 0); 
+        gbc.gridy = 2;
+        gbc.insets = new Insets(0, 0, 20, 0);
         centerPanel.add(sampleFcfsButton, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.gridwidth = 4; 
+        gbc.gridy = 3;
+        gbc.gridwidth = 4;
         gbc.insets = new Insets(0, 0, 0, 0);
         centerPanel.add(aboutButton, gbc);
 

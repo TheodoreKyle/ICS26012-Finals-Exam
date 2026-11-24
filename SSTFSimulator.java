@@ -14,9 +14,17 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Shortest Seek Time First (SSTF) Disk Scheduling Simulator
- * Operating Systems Project - Executable JAR Application
+ * Operating Systems Project
  */
-public class SSTFSimulator extends JFrame {
+public class SSTFSimulator extends JPanel {
+
+    private static final Font FONT_BOLD_24 = new Font("Arial", Font.BOLD, 24);
+    private static final Dimension DIM_BTN_SMALL = new Dimension(100, 40);
+
+    private static final Font FONT_LABEL = new Font("Arial", Font.BOLD, 16);
+    private static final Font FONT_VALUE = new Font("Arial", Font.PLAIN, 16);
+    private static final Font FONT_TABLE = new Font("Arial", Font.PLAIN, 16);
+    private static final Font FONT_TABLE_HEADER = new Font("Arial", Font.BOLD, 16);
 
     private JTextField requestsField;
     private JTextField headField;
@@ -28,7 +36,6 @@ public class SSTFSimulator extends JFrame {
     private JLabel avgSeekLabel;
     private SeekGraphPanel graphPanel;
 
-    // Data model for each step in SSTF execution
     private static class SeekStep {
         final int stepNumber;
         final int fromCylinder;
@@ -45,37 +52,61 @@ public class SSTFSimulator extends JFrame {
         }
     }
 
-    public SSTFSimulator() {
-        setTitle("SSTF Disk Scheduling Simulator - Operating Systems Project");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1040, 680);
-        setMinimumSize(new Dimension(880, 580));
-        setLocationRelativeTo(null);
+    public SSTFSimulator(Runnable onBack) {
+        setLayout(new BorderLayout());
+        setBackground(new Color(245, 247, 250));
 
+        add(createTopPanel(onBack), BorderLayout.NORTH);
         initUI();
-        loadDefaultExample();
-        runSSTF();
+    }
+
+    private JPanel createTopPanel(Runnable onBack) {
+        JButton backButton = new JButton("Back");
+        backButton.setFocusPainted(false);
+        backButton.setPreferredSize(DIM_BTN_SMALL);
+        backButton.setFont(FONT_BOLD_24);
+        backButton.setForeground(Color.BLACK);
+        backButton.setBackground(new Color(160, 200, 255));
+        backButton.setContentAreaFilled(false);
+        backButton.setOpaque(true);
+        backButton.setBorderPainted(false);
+
+        Color backNormalColor = new Color(160, 200, 255);
+        Color backPressedColor = new Color(120, 160, 220);
+
+        backButton.getModel().addChangeListener(e -> {
+            if (backButton.getModel().isPressed()) {
+                backButton.setBackground(backPressedColor);
+            } else {
+                backButton.setBackground(backNormalColor);
+            }
+        });
+
+        backButton.addActionListener(e -> onBack.run());
+
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 15));
+        topPanel.setOpaque(false);
+        topPanel.add(backButton);
+        return topPanel;
     }
 
     private void initUI() {
         JPanel root = new JPanel(new BorderLayout(12, 12));
-        root.setBorder(new EmptyBorder(14, 14, 14, 14));
+        root.setBorder(new EmptyBorder(0, 14, 14, 14));
         root.setBackground(new Color(245, 247, 250));
-        setContentPane(root);
 
-        // --- TOP: Title & Input Controls ---
         JPanel topContainer = new JPanel(new BorderLayout(10, 10));
         topContainer.setOpaque(false);
 
-        JLabel headerLabel = new JLabel("Shortest Seek Time First (SSTF) Disk Scheduling Simulator");
-        headerLabel.setFont(new Font("SansSerif", Font.BOLD, 20));
+        JLabel headerLabel = new JLabel("Shortest Seek Time First Disk Scheduling Simulator");
+        headerLabel.setFont(new Font("SansSerif", Font.BOLD, 20)); 
         headerLabel.setForeground(new Color(30, 41, 59));
         topContainer.add(headerLabel, BorderLayout.NORTH);
 
         JPanel inputPanel = new JPanel(new GridBagLayout());
         inputPanel.setBackground(Color.WHITE);
         inputPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(203, 213, 225)),
+                BorderFactory.createLineBorder(new Color(203, 213, 225)), 
                 new EmptyBorder(10, 12, 10, 12)
         ));
 
@@ -83,55 +114,48 @@ public class SSTFSimulator extends JFrame {
         gbc.insets = new Insets(4, 6, 4, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Request Queue Input
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        inputPanel.add(new JLabel("Request Queue (comma/space separated):"), gbc);
+        JLabel lblRequests = new JLabel("Request Queue (comma/space separated):");
+        lblRequests.setFont(FONT_LABEL);
+        inputPanel.add(lblRequests, gbc);
 
-        requestsField = new JTextField(28);
-        requestsField.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        requestsField = createInputField(28, "");
         gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0;
         inputPanel.add(requestsField, gbc);
 
-        // Initial Head Position
         gbc.gridx = 2; gbc.gridy = 0; gbc.weightx = 0;
-        inputPanel.add(new JLabel("Initial Head:"), gbc);
+        JLabel lblHead = new JLabel("Initial Head:");
+        lblHead.setFont(FONT_LABEL);
+        inputPanel.add(lblHead, gbc);
 
-        headField = new JTextField(6);
-        headField.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        headField = createInputField(6, "");
         gbc.gridx = 3; gbc.gridy = 0; gbc.weightx = 0.15;
         inputPanel.add(headField, gbc);
 
-        // Total Cylinders
         gbc.gridx = 4; gbc.gridy = 0; gbc.weightx = 0;
-        inputPanel.add(new JLabel("Total Cylinders:"), gbc);
+        JLabel lblMaxCyl = new JLabel("Total Cylinders:");
+        lblMaxCyl.setFont(FONT_LABEL);
+        inputPanel.add(lblMaxCyl, gbc);
 
-        maxCylinderField = new JTextField(6);
-        maxCylinderField.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        maxCylinderField = createInputField(6, "200");
         gbc.gridx = 5; gbc.gridy = 0; gbc.weightx = 0.15;
         inputPanel.add(maxCylinderField, gbc);
 
-        // Action Buttons Row
         JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttonBar.setOpaque(false);
 
-        JButton runButton = createStyledButton("Calculate SSTF", new Color(37, 99, 235), Color.WHITE);
-        JButton exampleButton = createStyledButton("Load Textbook Example", new Color(226, 232, 240), new Color(30, 41, 59));
-        JButton randomButton = createStyledButton("Random Queue", new Color(226, 232, 240), new Color(30, 41, 59));
-        JButton clearButton = createStyledButton("Clear", new Color(254, 226, 226), new Color(153, 27, 27));
-
-        runButton.addActionListener(e -> runSSTF());
-        exampleButton.addActionListener(e -> {
-            loadDefaultExample();
-            runSSTF();
-        });
+        JButton randomButton = createStyledButton("Random Queue", new Color(0, 0, 128), new Color(0, 0, 90));
+        JButton clearButton = createStyledButton("Clear", new Color(180, 0, 0), new Color(130, 0, 0));
+        JButton runButton = createStyledButton("Calculate SSTF", new Color(0, 100, 0), new Color(0, 70, 0));
+        
         randomButton.addActionListener(e -> {
             generateRandomInputs();
             runSSTF();
         });
         clearButton.addActionListener(e -> clearAll());
+        runButton.addActionListener(e -> runSSTF());
 
         buttonBar.add(runButton);
-        buttonBar.add(exampleButton);
         buttonBar.add(randomButton);
         buttonBar.add(clearButton);
 
@@ -142,7 +166,6 @@ public class SSTFSimulator extends JFrame {
         topContainer.add(inputPanel, BorderLayout.CENTER);
         root.add(topContainer, BorderLayout.NORTH);
 
-        // --- CENTER: Split Pane (Step Table on Left, Visual Seek Graph on Right) ---
         String[] columns = {"Step", "From", "To (Closest)", "Seek Distance", "Cumulative"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -152,9 +175,13 @@ public class SSTFSimulator extends JFrame {
         };
 
         JTable stepTable = new JTable(tableModel);
-        stepTable.setRowHeight(26);
-        stepTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        stepTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 13));
+        stepTable.setRowHeight(34);
+        stepTable.setFont(FONT_TABLE);
+        stepTable.setForeground(Color.BLACK);
+        stepTable.setShowGrid(true);
+        stepTable.setGridColor(new Color(203, 213, 225));
+        stepTable.getTableHeader().setFont(FONT_TABLE_HEADER);
+        stepTable.getTableHeader().setPreferredSize(new Dimension(0, 38));
         stepTable.getTableHeader().setBackground(new Color(241, 245, 249));
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -184,11 +211,10 @@ public class SSTFSimulator extends JFrame {
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScroll, graphPanel);
         splitPane.setResizeWeight(0.45);
-        splitPane.setDividerLocation(430);
+        splitPane.setDividerLocation(610);
         splitPane.setBorder(null);
         root.add(splitPane, BorderLayout.CENTER);
 
-        // --- BOTTOM: Summary Metrics ---
         JPanel summaryPanel = new JPanel(new GridLayout(3, 1, 4, 4));
         summaryPanel.setBackground(Color.WHITE);
         summaryPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -197,7 +223,7 @@ public class SSTFSimulator extends JFrame {
         ));
 
         sequenceLabel = new JLabel("Seek Sequence: -");
-        sequenceLabel.setFont(new Font("SansSerif", Font.BOLD, 13));
+        sequenceLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
         sequenceLabel.setForeground(new Color(30, 41, 59));
 
         totalSeekLabel = new JLabel("Total Head Movement (Seek Time): -");
@@ -205,7 +231,7 @@ public class SSTFSimulator extends JFrame {
         totalSeekLabel.setForeground(new Color(29, 78, 216));
 
         avgSeekLabel = new JLabel("Average Seek Distance: -");
-        avgSeekLabel.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        avgSeekLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
         avgSeekLabel.setForeground(new Color(51, 65, 85));
 
         summaryPanel.add(sequenceLabel);
@@ -213,45 +239,42 @@ public class SSTFSimulator extends JFrame {
         summaryPanel.add(avgSeekLabel);
 
         root.add(summaryPanel, BorderLayout.SOUTH);
+
+        add(root, BorderLayout.CENTER);
     }
 
-    private JButton createStyledButton(String text, Color bg, Color fg) {
-        JButton btn = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if (getModel().isPressed()) {
-                    g2.setColor(bg.darker());
-                } else if (getModel().isRollover()) {
-                    g2.setColor(new Color(
-                            Math.max(0, bg.getRed() - 15),
-                            Math.max(0, bg.getGreen() - 15),
-                            Math.max(0, bg.getBlue() - 15)
-                    ));
-                } else {
-                    g2.setColor(bg);
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
-                g2.dispose();
-                super.paintComponent(g);
+    private JTextField createInputField(int columns, String defaultText) {
+        JTextField field = new JTextField(defaultText, columns);
+        field.setFont(FONT_VALUE);
+        field.setForeground(Color.BLACK);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(203, 213, 225)),
+                new EmptyBorder(4, 8, 4, 8)
+        ));
+        return field;
+    }
+
+    private JButton createStyledButton(String text, Color normalColor, Color pressedColor) {
+        JButton button = new JButton(text);
+        button.setFocusPainted(false);
+        button.setFont(new Font("SansSerif", Font.BOLD, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(normalColor);
+        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        button.setBorder(new EmptyBorder(8, 16, 8, 16));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        button.getModel().addChangeListener(e -> {
+            if (button.getModel().isPressed()) {
+                button.setBackground(pressedColor);
+            } else {
+                button.setBackground(normalColor);
             }
-        };
-        btn.setForeground(fg);
-        btn.setContentAreaFilled(false);
-        btn.setOpaque(false);
-        btn.setFocusPainted(false);
-        btn.setRolloverEnabled(true);
-        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        btn.setBorder(new EmptyBorder(8, 16, 8, 16));
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        return btn;
-    }
+        });
 
-    private void loadDefaultExample() {
-        requestsField.setText("82, 170, 43, 140, 16, 190");
-        headField.setText("50");
-        maxCylinderField.setText("200");
+        return button;
     }
 
     private void generateRandomInputs() {
@@ -279,6 +302,7 @@ public class SSTFSimulator extends JFrame {
     private void clearAll() {
         requestsField.setText("");
         headField.setText("");
+        maxCylinderField.setText("200");
         tableModel.setRowCount(0);
         sequenceLabel.setText("Seek Sequence: -");
         totalSeekLabel.setText("Total Head Movement (Seek Time): -");
@@ -327,10 +351,8 @@ public class SSTFSimulator extends JFrame {
                 throw new IllegalArgumentException("Please enter at least one disk request.");
             }
 
-            // Execute Shortest Seek Time First (SSTF) Algorithm
             List<SeekStep> steps = computeSSTF(requests, initialHead);
 
-            // Populate Table
             tableModel.setRowCount(0);
             StringBuilder seqBuilder = new StringBuilder();
             seqBuilder.append(initialHead);
@@ -354,7 +376,6 @@ public class SSTFSimulator extends JFrame {
             totalSeekLabel.setText("Total Head Movement (Seek Time): " + totalSeek + " cylinders");
             avgSeekLabel.setText(String.format("Average Seek Distance: %.2f cylinders", avgSeek));
 
-            // Update Visual Graph
             graphPanel.setData(initialHead, steps, totalCylinders);
 
         } catch (NumberFormatException ex) {
@@ -368,11 +389,6 @@ public class SSTFSimulator extends JFrame {
         }
     }
 
-    /**
-     * Core SSTF Scheduling Algorithm
-     * Repeatedly selects the unserviced request with the minimum seek distance
-     * from the current read/write head position.
-     */
     private List<SeekStep> computeSSTF(List<Integer> requests, int initialHead) {
         int n = requests.size();
         boolean[] visited = new boolean[n];
@@ -406,10 +422,6 @@ public class SSTFSimulator extends JFrame {
         return steps;
     }
 
-    /**
-     * Disk Head Movement Graph Panel where every top-axis label, dashed guide line,
-     * and plotted node shares the exact same aligned X coordinate.
-     */
     private static class SeekGraphPanel extends JPanel {
         private List<Integer> seekSequence = new ArrayList<>();
         private int diskSize = 200;
@@ -435,10 +447,6 @@ public class SSTFSimulator extends JFrame {
             repaint();
         }
 
-        /**
-         * Computes non-overlapping X positions pinned between leftAnchor and rightAnchor
-         * while preserving relative proximity to true proportional cylinder positions.
-         */
         private int[] computeAlignedAxisX(int[] trueX, int[] widths, int minGap, int leftAnchor, int rightAnchor) {
             int n = trueX.length;
             int[] x = new int[n];
@@ -500,7 +508,6 @@ public class SSTFSimulator extends JFrame {
                 }
             }
 
-            // Pin boundary markers (0 and maxCylinder) to exact ends of the axis line
             pos[0] = leftAnchor;
             for (int i = 1; i < n; i++) {
                 if (pos[i] < pos[i - 1] + reqDist[i - 1]) {
@@ -572,7 +579,6 @@ public class SSTFSimulator extends JFrame {
                 return;
             }
 
-            // Draw main horizontal cylinder axis
             g2.setColor(new Color(150, 160, 175));
             g2.setStroke(new BasicStroke(1.5f));
             g2.drawLine(padLeft, padTop, padLeft + plotW, padTop);
@@ -586,7 +592,6 @@ public class SSTFSimulator extends JFrame {
             int effectiveGap = useTwoTiers ? 2 : minGap;
             int[] alignedX = computeAlignedAxisX(trueX, widths, effectiveGap, padLeft, padLeft + plotW);
 
-            // Map each cylinder to its exact aligned X coordinate so labels, vertical lines, and dots match
             Map<Integer, Integer> cylToX = new HashMap<>();
             Stroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4, 4}, 0);
 
@@ -676,17 +681,5 @@ public class SSTFSimulator extends JFrame {
 
             g2.dispose();
         }
-    }
-
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
-        }
-
-        SwingUtilities.invokeLater(() -> {
-            SSTFSimulator app = new SSTFSimulator();
-            app.setVisible(true);
-        });
     }
 }

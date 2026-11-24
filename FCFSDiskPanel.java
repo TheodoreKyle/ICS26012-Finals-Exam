@@ -78,10 +78,6 @@ public class FCFSDiskPanel extends JPanel {
         buttonPanel.add(btnReset);
         buttonPanel.add(btnCalculate);
 
-        buttonPanel.add(btnRandom);
-        buttonPanel.add(btnReset);
-        buttonPanel.add(btnCalculate);
-
         inputContainer.add(fieldsPanel, BorderLayout.CENTER);
         inputContainer.add(buttonPanel, BorderLayout.SOUTH);
         contentPanel.add(inputContainer, BorderLayout.NORTH);
