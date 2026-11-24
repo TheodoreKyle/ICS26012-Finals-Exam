@@ -39,9 +39,11 @@ public class MultilevelQueuePanel extends JPanel {
     private JLabel totalCtLabel;
     private JLabel totalTatLabel;
     private JLabel totalWtLabel;
+    private JLabel totalRtLabel;
     private JLabel avgCtLabel;
     private JLabel avgTatLabel;
     private JLabel avgWtLabel;
+    private JLabel avgRtLabel;
     private GanttChartPanel ganttChartPanel;
 
     private static final Font FONT_BOLD_24 = new Font("Arial", Font.BOLD, 24);
@@ -344,21 +346,25 @@ public class MultilevelQueuePanel extends JPanel {
         totalCtLabel = createStatLabel("");
         totalTatLabel = createStatLabel("");
         totalWtLabel = createStatLabel("");
+        totalRtLabel = createStatLabel("");
         avgCtLabel = createStatLabel("");
         avgTatLabel = createStatLabel("");
         avgWtLabel = createStatLabel("");
+        avgRtLabel = createStatLabel("");
 
-        JPanel sumsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel sumsPanel = new JPanel(new GridLayout(4, 1, 0, 5));
         sumsPanel.setOpaque(false);
         sumsPanel.add(totalCtLabel);
         sumsPanel.add(totalTatLabel);
         sumsPanel.add(totalWtLabel);
+        sumsPanel.add(totalRtLabel);
 
-        JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel avgsPanel = new JPanel(new GridLayout(4, 1, 0, 5));
         avgsPanel.setOpaque(false);
         avgsPanel.add(avgCtLabel);
         avgsPanel.add(avgTatLabel);
         avgsPanel.add(avgWtLabel);
+        avgsPanel.add(avgRtLabel);
 
         JPanel bottomStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 10));
         bottomStatsPanel.add(sumsPanel);
@@ -527,9 +533,11 @@ public class MultilevelQueuePanel extends JPanel {
         totalCtLabel.setText("");
         totalTatLabel.setText("");
         totalWtLabel.setText("");
+        totalRtLabel.setText("");
         avgCtLabel.setText("");
         avgTatLabel.setText("");
         avgWtLabel.setText("");
+        avgRtLabel.setText("");
     }
 
     private void clearAll() {
@@ -608,7 +616,7 @@ public class MultilevelQueuePanel extends JPanel {
         return false;
     }
 
-private void executeMultilevelQueue() {
+    private void executeMultilevelQueue() {
         int n = tableModel.getRowCount();
         int highQuantum = Integer.parseInt(queue1QuantumField.getText());
         int mediumQuantum = Integer.parseInt(queue2QuantumField.getText());
@@ -729,7 +737,7 @@ private void executeMultilevelQueue() {
         double cpuUtil = ((totalTime - totalIdleTime) / totalTime) * 100.0;
         double throughput = (double) n / totalTime;
 
-        double sumCt = 0, sumTat = 0, sumWt = 0;
+        double sumCt = 0, sumTat = 0, sumWt = 0, sumRt = 0;
 
         for (ProcessData p : processes) {
             tableModel.setValueAt(p.ct, p.rowIndex, 4);
@@ -739,6 +747,7 @@ private void executeMultilevelQueue() {
             sumCt += p.ct;
             sumTat += p.tat;
             sumWt += p.wt;
+            sumRt += Integer.parseInt(tableModel.getValueAt(p.rowIndex, 7).toString());
         }
 
         DecimalFormat df = new DecimalFormat("0.##");
@@ -753,10 +762,12 @@ private void executeMultilevelQueue() {
         totalCtLabel.setText("Total Completion Time: " + df.format(sumCt) + "ms");
         totalTatLabel.setText("Total Turn Around Time: " + df.format(sumTat) + "ms");
         totalWtLabel.setText("Total Waiting Time: " + df.format(sumWt) + "ms");
+        totalRtLabel.setText("Total Response Time: " + df.format(sumRt) + "ms");
         
         avgCtLabel.setText("Average Completion Time: " + df.format(sumCt / n) + "ms");
         avgTatLabel.setText("Average Turn Around Time: " + df.format(sumTat / n) + "ms");
         avgWtLabel.setText("Average Waiting Time: " + df.format(sumWt / n) + "ms");
+        avgRtLabel.setText("Average Response Time: " + df.format(sumRt / n) + "ms");
         
         ganttChartPanel.setSegments(segments);
     }
