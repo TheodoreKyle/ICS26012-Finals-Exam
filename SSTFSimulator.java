@@ -1,9 +1,9 @@
 import java.awt.*;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -24,17 +24,17 @@ public class SSTFSimulator extends JFrame {
     private JLabel sequenceLabel;
     private JLabel totalSeekLabel;
     private JLabel avgSeekLabel;
-    private SeekChartPanel chartPanel;
+    private SeekGraphPanel graphPanel;
 
     // Data model for each step in SSTF execution
     private static class SeekStep {
         final int stepNumber;
         final int fromCylinder;
         final int toCylinder;
-        final int distance;
-        final int cumulativeDistance;
+        final long distance;
+        final long cumulativeDistance;
 
-        SeekStep(int stepNumber, int fromCylinder, int toCylinder, int distance, int cumulativeDistance) {
+        SeekStep(int stepNumber, int fromCylinder, int toCylinder, long distance, long cumulativeDistance) {
             this.stepNumber = stepNumber;
             this.fromCylinder = fromCylinder;
             this.toCylinder = toCylinder;
@@ -46,7 +46,7 @@ public class SSTFSimulator extends JFrame {
     public SSTFSimulator() {
         setTitle("SSTF Disk Scheduling Simulator - Operating Systems Project");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1020, 680);
+        setSize(1040, 680);
         setMinimumSize(new Dimension(880, 580));
         setLocationRelativeTo(null);
 
@@ -140,7 +140,7 @@ public class SSTFSimulator extends JFrame {
         topContainer.add(inputPanel, BorderLayout.CENTER);
         root.add(topContainer, BorderLayout.NORTH);
 
-        // --- CENTER: Split Pane (Step Table on Left, Visual Seek Chart on Right) ---
+        // --- CENTER: Split Pane (Step Table on Left, Visual Seek Graph on Right) ---
         String[] columns = {"Step", "From", "To (Closest)", "Seek Distance", "Cumulative"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -171,8 +171,8 @@ public class SSTFSimulator extends JFrame {
         ));
         tableScroll.setBackground(Color.WHITE);
 
-        chartPanel = new SeekChartPanel();
-        chartPanel.setBorder(BorderFactory.createTitledBorder(
+        graphPanel = new SeekGraphPanel();
+        graphPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(203, 213, 225)),
                 "Disk Head Movement Graph",
                 TitledBorder.LEFT,
@@ -180,7 +180,7 @@ public class SSTFSimulator extends JFrame {
                 new Font("SansSerif", Font.BOLD, 13)
         ));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScroll, chartPanel);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, tableScroll, graphPanel);
         splitPane.setResizeWeight(0.45);
         splitPane.setDividerLocation(430);
         splitPane.setBorder(null);
@@ -281,7 +281,7 @@ public class SSTFSimulator extends JFrame {
         sequenceLabel.setText("Seek Sequence: -");
         totalSeekLabel.setText("Total Head Movement (Seek Time): -");
         avgSeekLabel.setText("Average Seek Distance: -");
-        chartPanel.clearData();
+        graphPanel.clearData();
     }
 
     private void runSSTF() {
@@ -333,7 +333,7 @@ public class SSTFSimulator extends JFrame {
             StringBuilder seqBuilder = new StringBuilder();
             seqBuilder.append(initialHead);
 
-            int totalSeek = 0;
+            long totalSeek = 0;
             for (SeekStep step : steps) {
                 tableModel.addRow(new Object[]{
                         step.stepNumber,
@@ -352,8 +352,8 @@ public class SSTFSimulator extends JFrame {
             totalSeekLabel.setText("Total Head Movement (Seek Time): " + totalSeek + " cylinders");
             avgSeekLabel.setText(String.format("Average Seek Distance: %.2f cylinders", avgSeek));
 
-            // Update Visual Chart
-            chartPanel.setData(initialHead, steps, totalCylinders);
+            // Update Visual Graph
+            graphPanel.setData(initialHead, steps, totalCylinders);
 
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this,
@@ -377,15 +377,15 @@ public class SSTFSimulator extends JFrame {
         List<SeekStep> steps = new ArrayList<>();
 
         int currentHead = initialHead;
-        int cumulativeSeek = 0;
+        long cumulativeSeek = 0;
 
         for (int step = 1; step <= n; step++) {
             int closestIndex = -1;
-            int minDistance = Integer.MAX_VALUE;
+            long minDistance = Long.MAX_VALUE;
 
             for (int i = 0; i < n; i++) {
                 if (!visited[i]) {
-                    int distance = Math.abs(requests.get(i) - currentHead);
+                    long distance = Math.abs((long) requests.get(i) - currentHead);
                     if (distance < minDistance) {
                         minDistance = distance;
                         closestIndex = i;
@@ -405,116 +405,289 @@ public class SSTFSimulator extends JFrame {
     }
 
     /**
-     * Custom Swing Panel to render the disk head-movement graph.
+     * Disk Head Movement Graph Panel with guaranteed top-axis label spacing
+     * and boxed directional node labels.
      */
-    private static class SeekChartPanel extends JPanel {
-        private Integer initialHead = null;
-        private List<SeekStep> steps = new ArrayList<>();
-        private int totalCylinders = 200;
+    private static class SeekGraphPanel extends JPanel {
+        private List<Integer> seekSequence = new ArrayList<>();
+        private int diskSize = 200;
 
-        SeekChartPanel() {
+        public SeekGraphPanel() {
             setBackground(Color.WHITE);
+            setPreferredSize(new Dimension(520, 400));
         }
 
-        void setData(int initialHead, List<SeekStep> steps, int totalCylinders) {
-            this.initialHead = initialHead;
-            this.steps = new ArrayList<>(steps);
-            this.totalCylinders = totalCylinders;
+        public void setData(int initialHead, List<SeekStep> steps, int totalCylinders) {
+            List<Integer> seq = new ArrayList<>();
+            seq.add(initialHead);
+            for (SeekStep step : steps) {
+                seq.add(step.toCylinder);
+            }
+            this.seekSequence = seq;
+            this.diskSize = totalCylinders;
             repaint();
         }
 
-        void clearData() {
-            this.initialHead = null;
-            this.steps.clear();
+        public void clearData() {
+            this.seekSequence.clear();
             repaint();
+        }
+
+        /**
+         * Computes exact non-overlapping X centers for sorted labels while keeping them
+         * as close as possible to their true axis positions.
+         */
+        private int[] computeNonOverlappingCenters(int[] trueX, int[] widths, int minGap, int minBound, int maxBound) {
+            int n = trueX.length;
+            int[] centers = new int[n];
+            if (n == 0) return centers;
+            if (n == 1) {
+                centers[0] = Math.max(minBound + widths[0] / 2, Math.min(maxBound - widths[0] / 2, trueX[0]));
+                return centers;
+            }
+
+            double[] d = new double[n];
+            d[0] = 0.0;
+            for (int i = 1; i < n; i++) {
+                d[i] = d[i - 1] + (widths[i - 1] + widths[i]) / 2.0 + minGap;
+            }
+
+            double[] blockVal = new double[n];
+            int[] blockWeight = new int[n];
+            int[] blockStart = new int[n];
+            int numBlocks = 0;
+
+            for (int i = 0; i < n; i++) {
+                double val = trueX[i] - d[i];
+                blockVal[numBlocks] = val;
+                blockWeight[numBlocks] = 1;
+                blockStart[numBlocks] = i;
+                numBlocks++;
+
+                while (numBlocks >= 2 && blockVal[numBlocks - 2] > blockVal[numBlocks - 1]) {
+                    int w1 = blockWeight[numBlocks - 2];
+                    int w2 = blockWeight[numBlocks - 1];
+                    double mergedVal = (blockVal[numBlocks - 2] * w1 + blockVal[numBlocks - 1] * w2) / (w1 + w2);
+                    blockVal[numBlocks - 2] = mergedVal;
+                    blockWeight[numBlocks - 2] = w1 + w2;
+                    numBlocks--;
+                }
+            }
+
+            for (int b = 0; b < numBlocks; b++) {
+                int start = blockStart[b];
+                int end = (b + 1 < numBlocks) ? blockStart[b + 1] : n;
+                for (int i = start; i < end; i++) {
+                    centers[i] = (int) Math.round(blockVal[b] + d[i]);
+                }
+            }
+
+            int leftLimit = minBound + widths[0] / 2;
+            if (centers[0] < leftLimit) {
+                centers[0] = leftLimit;
+            }
+            for (int i = 1; i < n; i++) {
+                int minAllowed = centers[i - 1] + (widths[i - 1] + widths[i]) / 2 + minGap;
+                if (centers[i] < minAllowed) {
+                    centers[i] = minAllowed;
+                }
+            }
+
+            int rightLimit = maxBound - widths[n - 1] / 2;
+            if (centers[n - 1] > rightLimit) {
+                centers[n - 1] = rightLimit;
+            }
+            for (int i = n - 2; i >= 0; i--) {
+                int maxAllowed = centers[i + 1] - (widths[i] + widths[i + 1]) / 2 - minGap;
+                if (centers[i] > maxAllowed) {
+                    centers[i] = Math.max(leftLimit, maxAllowed);
+                }
+            }
+
+            return centers;
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (initialHead == null || steps.isEmpty()) {
+            if (seekSequence == null || seekSequence.isEmpty()) {
                 g.setColor(Color.GRAY);
-                g.drawString("Run SSTF to display the disk head movement graph.", 30, 50);
+                g.drawString("Run a simulation to view the head movement path.", 40, getHeight() / 2);
                 return;
             }
 
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-            int padLeft = 36;
-            int padRight = 36;
-            int padTop = 48;
+            g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+            FontMetrics fm = g2.getFontMetrics();
+
+            int maxCylinder = Math.max(1, diskSize - 1);
+            List<Integer> seq = seekSequence;
+
+            Set<Integer> uniqueSet = new TreeSet<>(seq);
+            Set<Integer> topAxisMarkers = new TreeSet<>(uniqueSet);
+            topAxisMarkers.add(0);
+            topAxisMarkers.add(maxCylinder);
+
+            List<Integer> sortedMarkers = new ArrayList<>(topAxisMarkers);
+            int n = sortedMarkers.size();
+            int[] widths = new int[n];
+            int totalLabelWidth = 0;
+
+            for (int i = 0; i < n; i++) {
+                widths[i] = fm.stringWidth(String.valueOf(sortedMarkers.get(i)));
+                totalLabelWidth += widths[i];
+            }
+
+            int minGap = 14;
+            int totalNeededWidth = totalLabelWidth + Math.max(0, n - 1) * minGap;
+            boolean useTwoTiers = totalNeededWidth > (getWidth() - 24);
+
+            int padLeft = 45;
+            int padRight = 70;
+            int padTop = useTwoTiers ? 50 : 38;
             int padBottom = 30;
 
-            int width = getWidth() - padLeft - padRight;
-            int height = getHeight() - padTop - padBottom;
-            if (width <= 20 || height <= 20) {
+            int plotW = getWidth() - padLeft - padRight;
+            int plotH = getHeight() - padTop - padBottom;
+            if (plotW <= 0 || plotH <= 0) {
                 g2.dispose();
                 return;
             }
 
-            int maxCyl = Math.max(1, totalCylinders - 1);
-
-            // Draw top cylinder axis line
-            g2.setColor(new Color(148, 163, 184));
+            // Draw main horizontal cylinder axis
+            g2.setColor(new Color(150, 160, 175));
             g2.setStroke(new BasicStroke(1.5f));
-            g2.drawLine(padLeft, padTop, padLeft + width, padTop);
+            g2.drawLine(padLeft, padTop, padLeft + plotW, padTop);
 
-            // Axis boundary labels (0 and maxCylinder)
-            g2.setFont(new Font("SansSerif", Font.BOLD, 11));
-            g2.setColor(new Color(71, 85, 105));
-            g2.drawString("0", padLeft - 4, padTop - 16);
-            String maxLabel = String.valueOf(maxCyl);
-            g2.drawString(maxLabel, padLeft + width - g2.getFontMetrics().stringWidth(maxLabel) / 2, padTop - 16);
-
-            // Collect all visited points including initial head
-            List<Integer> points = new ArrayList<>();
-            points.add(initialHead);
-            for (SeekStep s : steps) {
-                points.add(s.toCylinder);
+            int[] trueX = new int[n];
+            for (int i = 0; i < n; i++) {
+                int cyl = sortedMarkers.get(i);
+                trueX[i] = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
             }
 
-            int numPoints = points.size();
-            double yStep = (double) height / Math.max(1, numPoints - 1);
+            int[] labelCenterX = new int[n];
+            int[] labelRow = new int[n];
 
-            // Draw dashed vertical guide lines & top tick labels
-            Stroke dashed = new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{3}, 0);
-            for (int cyl : points) {
-                int x = padLeft + (int) Math.round(((double) cyl / maxCyl) * width);
-                g2.setColor(new Color(226, 232, 240));
-                g2.setStroke(dashed);
-                g2.drawLine(x, padTop, x, padTop + height);
+            if (!useTwoTiers) {
+                labelCenterX = computeNonOverlappingCenters(trueX, widths, minGap, 12, getWidth() - 12);
+            } else {
+                int evenCount = (n + 1) / 2;
+                int oddCount = n / 2;
 
-                g2.setColor(new Color(51, 65, 85));
-                String lbl = String.valueOf(cyl);
-                int lblW = g2.getFontMetrics().stringWidth(lbl);
-                g2.drawString(lbl, x - lblW / 2, padTop - 5);
+                int[] evenTrueX = new int[evenCount];
+                int[] evenWidths = new int[evenCount];
+                int[] oddTrueX = new int[oddCount];
+                int[] oddWidths = new int[oddCount];
+
+                for (int i = 0; i < n; i++) {
+                    if (i % 2 == 0) {
+                        evenTrueX[i / 2] = trueX[i];
+                        evenWidths[i / 2] = widths[i];
+                    } else {
+                        oddTrueX[i / 2] = trueX[i];
+                        oddWidths[i / 2] = widths[i];
+                    }
+                }
+
+                int[] evenCenters = computeNonOverlappingCenters(evenTrueX, evenWidths, minGap, 12, getWidth() - 12);
+                int[] oddCenters = computeNonOverlappingCenters(oddTrueX, oddWidths, minGap, 12, getWidth() - 12);
+
+                for (int i = 0; i < n; i++) {
+                    if (i % 2 == 0) {
+                        labelCenterX[i] = evenCenters[i / 2];
+                        labelRow[i] = 0;
+                    } else {
+                        labelCenterX[i] = oddCenters[i / 2];
+                        labelRow[i] = 1;
+                    }
+                }
             }
 
-            // Draw seek path segments
-            g2.setColor(new Color(37, 99, 235));
-            g2.setStroke(new BasicStroke(2.2f));
-            for (int i = 0; i < numPoints - 1; i++) {
-                double x1 = padLeft + ((double) points.get(i) / maxCyl) * width;
-                double y1 = padTop + i * yStep;
-                double x2 = padLeft + ((double) points.get(i + 1) / maxCyl) * width;
-                double y2 = padTop + (i + 1) * yStep;
-                g2.draw(new Line2D.Double(x1, y1, x2, y2));
+            Stroke dashed = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4, 4}, 0);
+
+            for (int i = 0; i < n; i++) {
+                int cyl = sortedMarkers.get(i);
+                int tx = trueX[i];
+                int lx = labelCenterX[i];
+                int labelY = (labelRow[i] == 0) ? (padTop - 8) : (padTop - 23);
+
+                if (uniqueSet.contains(cyl)) {
+                    g2.setColor(new Color(215, 220, 230));
+                    g2.setStroke(dashed);
+                    g2.drawLine(tx, padTop, tx, padTop + plotH);
+                }
+
+                String cylStr = String.valueOf(cyl);
+                boolean isBoundary = (cyl == 0 || cyl == maxCylinder) && !uniqueSet.contains(cyl);
+                g2.setColor(isBoundary ? new Color(110, 120, 135) : new Color(45, 55, 70));
+                g2.drawString(cylStr, lx - (widths[i] / 2), labelY);
             }
 
-            // Draw nodes
-            for (int i = 0; i < numPoints; i++) {
-                int cyl = points.get(i);
-                double x = padLeft + ((double) cyl / maxCyl) * width;
-                double y = padTop + i * yStep;
+            int steps = seq.size();
+            double stepY = (steps > 1) ? (double) plotH / (steps - 1) : plotH;
 
-                g2.setColor(i == 0 ? new Color(22, 163, 74) : new Color(29, 78, 216));
-                g2.fill(new Ellipse2D.Double(x - 4.5, y - 4.5, 9, 9));
+            int prevX = padLeft + (int) Math.round(((double) seq.get(0) / maxCylinder) * plotW);
+            int prevY = padTop;
 
-                g2.setColor(new Color(15, 23, 42));
+            for (int i = 1; i < steps; i++) {
+                int cyl = seq.get(i);
+                int currX = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
+                int currY = padTop + (int) Math.round(i * stepY);
+
+                g2.setColor(new Color(55, 95, 215));
+                g2.setStroke(new BasicStroke(2.2f));
+                g2.drawLine(prevX, prevY, currX, currY);
+
+                prevX = currX;
+                prevY = currY;
+            }
+
+            for (int i = 0; i < steps; i++) {
+                int cyl = seq.get(i);
+                int currX = padLeft + (int) Math.round(((double) cyl / maxCylinder) * plotW);
+                int currY = padTop + (int) Math.round(i * stepY);
+
+                g2.setColor(i == 0 ? new Color(65, 165, 75) : new Color(55, 95, 215));
+                g2.fillOval(currX - 5, currY - 5, 10, 10);
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawOval(currX - 5, currY - 5, 10, 10);
+
+                String pointLabel = (i == 0) ? (cyl + " (Start)") : String.valueOf(cyl);
                 g2.setFont(new Font("SansSerif", Font.BOLD, 11));
-                String tag = (i == 0) ? cyl + " (Start)" : String.valueOf(cyl);
-                g2.drawString(tag, (int) x + 7, (int) y + 4);
+                int textW = fm.stringWidth(pointLabel);
+                int textH = fm.getAscent();
+
+                int prevCyl = (i > 0) ? seq.get(i - 1) : cyl;
+                int nextCyl = (i < steps - 1) ? seq.get(i + 1) : cyl;
+                boolean placeLeft = (i > 0) && (prevCyl >= cyl) && (nextCyl >= cyl);
+                if (currX + 10 + textW > getWidth() - 8) {
+                    placeLeft = true;
+                }
+                if (placeLeft && currX - 10 - textW < 6) {
+                    placeLeft = false;
+                }
+
+                int labelX = placeLeft ? (currX - 10 - textW) : (currX + 10);
+                int labelY = (i == 0) ? (currY + 15) : (currY + 4);
+
+                int boxPadX = 3;
+                int boxPadY = 2;
+                int boxX = labelX - boxPadX;
+                int boxY = labelY - textH - boxPadY + 1;
+                int boxW = textW + (boxPadX * 2);
+                int boxH = textH + (boxPadY * 2);
+
+                g2.setColor(new Color(255, 255, 255, 230));
+                g2.fillRoundRect(boxX, boxY, boxW, boxH, 5, 5);
+                g2.setColor(new Color(210, 218, 230));
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.drawRoundRect(boxX, boxY, boxW, boxH, 5, 5);
+
+                g2.setColor(new Color(30, 35, 45));
+                g2.drawString(pointLabel, labelX, labelY);
             }
 
             g2.dispose();
