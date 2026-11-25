@@ -181,26 +181,31 @@ public class SampleRoundRobinPanel extends JPanel {
         double sumCt = 76;
         double sumTat = 76;
         double sumWt = 44;
+        double sumRt = 26;
 
         JLabel totalCtLabel = createStatLabel("Total Completion Time: " + DF.format(sumCt) + "ms");
         JLabel totalTatLabel = createStatLabel("Total Turn Around Time: " + DF.format(sumTat) + "ms");
         JLabel totalWtLabel = createStatLabel("Total Waiting Time: " + DF.format(sumWt) + "ms");
+        JLabel totalRtLabel = createStatLabel("Total Response Time: " + DF.format(sumRt) + "ms");
 
         JLabel avgCtLabel = createStatLabel("Average Completion Time: " + DF.format(sumCt / n) + "ms");
         JLabel avgTatLabel = createStatLabel("Average Turn Around Time: " + DF.format(sumTat / n) + "ms");
         JLabel avgWtLabel = createStatLabel("Average Waiting Time: " + DF.format(sumWt / n) + "ms");
+        JLabel avgRtLabel = createStatLabel("Average Response Time: " + DF.format(sumRt / n) + "ms");
 
-        JPanel sumsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel sumsPanel = new JPanel(new GridLayout(4, 1, 0, 5));
         sumsPanel.setOpaque(false);
         sumsPanel.add(totalCtLabel);
         sumsPanel.add(totalTatLabel);
         sumsPanel.add(totalWtLabel);
+        sumsPanel.add(totalRtLabel);
 
-        JPanel avgsPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel avgsPanel = new JPanel(new GridLayout(4, 1, 0, 5));
         avgsPanel.setOpaque(false);
         avgsPanel.add(avgCtLabel);
         avgsPanel.add(avgTatLabel);
         avgsPanel.add(avgWtLabel);
+        avgsPanel.add(avgRtLabel);
 
         JPanel bottomStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 30, 10));
         bottomStatsPanel.add(sumsPanel);
