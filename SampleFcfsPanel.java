@@ -15,8 +15,8 @@ public class SampleFcfsPanel extends JPanel {
     private static final Dimension DIM_BTN_SMALL = new Dimension(100, 40);
 
     private static final int SAMPLE_DISK_SIZE = 200;
-    private static final int SAMPLE_INITIAL_HEAD = 53;
-    private static final List<Integer> SAMPLE_REQUESTS = Arrays.asList(98, 183, 37, 122, 14, 124, 65, 67);
+    private static final int SAMPLE_INITIAL_HEAD = 50;
+    private static final List<Integer> SAMPLE_REQUESTS = Arrays.asList(82, 170, 43, 140, 16, 190);
 
     private final DefaultTableModel tableModel;
     private final JLabel lblSeekOrder;
@@ -45,7 +45,7 @@ public class SampleFcfsPanel extends JPanel {
 
         JTextField txtDiskSize = createReadOnlyField(String.valueOf(SAMPLE_DISK_SIZE), 10);
         JTextField txtInitialHead = createReadOnlyField(String.valueOf(SAMPLE_INITIAL_HEAD), 10);
-        JTextField txtRequests = createReadOnlyField("98, 183, 37, 122, 14, 124, 65, 67", 38);
+        JTextField txtRequests = createReadOnlyField("82, 170, 43, 140, 16, 190", 38);
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
         fieldsPanel.add(new JLabel("Disk Size (N, default 200):"), gbc);
