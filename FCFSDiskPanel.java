@@ -171,8 +171,8 @@ public class FCFSDiskPanel extends JPanel {
 
     private void loadSampleData() {
         txtDiskSize.setText("200");
-        txtInitialHead.setText("53");
-        txtRequests.setText("98, 183, 37, 122, 14, 124, 65, 67");
+        txtInitialHead.setText("50");
+        txtRequests.setText("82, 170, 43, 140, 16, 190");
     }
 
     private void resetForm() {
